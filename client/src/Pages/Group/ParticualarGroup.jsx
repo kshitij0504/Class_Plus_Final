@@ -20,7 +20,7 @@ import {
   FaBell,
   FaComments,
 } from "react-icons/fa";
-
+import EventDrawer from "../../Components/EventDrawer";
 import groupIcon from "../../assets/Group.svg"; // Ensure the path is correct
 
 const GroupDetail = () => {
@@ -34,17 +34,22 @@ const GroupDetail = () => {
   const [events, setEvents] = useState([]);
   const [newMember, setNewMember] = useState("");
   const [isLeader, setIsLeader] = useState(false);
+  const [showDrawer, setShowDrawer] = useState(false);
 
   useEffect(() => {
     const fetchGroup = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:8000/api/groups/${id}` // Use relative URL for better deployment flexibility
+          `http://localhost:8000/api/groups/${id}`
         );
         setGroup(response.data.data);
         setJoinCode(response.data.data.joinCode);
         setMembers(response.data.data?.members || []);
-        setEvents(response.data.data?.events || []);
+        const sessionsResponse = await axios.get(
+          `http://localhost:8000/api/groups/${id}/sessions`,
+          { withCredentials: true }
+        );
+        setEvents(sessionsResponse.data.data || []);
         if (currentUser.id === response.data.data.leaderId) {
           setIsLeader(true);
         }
@@ -70,6 +75,20 @@ const GroupDetail = () => {
     } catch (error) {
       console.error("Error adding member:", error);
     }
+  };
+
+  const handleAddEvent = (newEvent) => {
+    // Add new event to the events state array
+    setEvents((prevEvents) => [newEvent, ...prevEvents]); // Add latest event at the top
+    setShowDrawer(false); // Close the drawer after adding
+  };
+
+  const handleOpenDrawer = () => {
+    setShowDrawer(true);
+  };
+
+  const handleCloseDrawer = () => {
+    setShowDrawer(false);
   };
 
   if (loading) {
@@ -102,15 +121,20 @@ const GroupDetail = () => {
       <div className="flex-1 p-4 sm:p-6 bg-gradient-to-r from-gray-900 to-black">
         <header className="bg-blue-600 text-white p-4 sm:p-6 rounded-lg shadow-lg mb-6 flex flex-col sm:flex-row items-center justify-between">
           <div className="mb-4 sm:mb-0">
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">{group.name}</h1>
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
+              {group.name}
+            </h1>
             <p className="mt-2 text-lg">
               {group.description || "No description available."}
             </p>
           </div>
-          <img src={groupIcon} alt="Group Icon" className="h-20 w-20 sm:h-40 sm:w-40" />
+          <img
+            src={groupIcon}
+            alt="Group Icon"
+            className="h-20 w-20 sm:h-40 sm:w-40"
+          />
         </header>
 
-        {/* Group Details */}
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8 mb-8">
           <Card className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg border-none">
             <div className="flex items-center space-x-4">
@@ -123,34 +147,69 @@ const GroupDetail = () => {
               </div>
             </div>
           </Card>
+
           <Card className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg border-none">
-            <div className="flex items-center space-x-4">
-              <FaRegCalendarAlt className="text-3xl text-blue-500" />
-              <div>
+            <div className="flex items-start space-x-4">
+              <FaRegCalendarAlt className="text-3xl text-blue-500 mt-1" />
+              <div className="flex-1">
                 <h3 className="text-2xl font-semibold">Upcoming Events</h3>
+
+                {isLeader && (
+                  <Button
+                    onClick={handleOpenDrawer}
+                    className="bg-blue-600 hover:bg-blue-500 text-white mb-4 mt-2"
+                  >
+                    Add Event
+                  </Button>
+                )}
+
                 {events.length > 0 ? (
-                  events.map((event) => (
-                    <div
-                      key={event.id}
-                      className="flex justify-between items-center mb-4"
-                    >
-                      <span>
-                        {event.name} - {event.date}
-                      </span>
-                      <Button size="sm" color="info">
-                        RSVP
-                      </Button>
-                    </div>
-                  ))
+                  <div
+                    className="mt-4 space-y-4 overflow-y-auto scrollbar-hide"
+                    style={{ maxHeight: "200px" }}
+                  >
+                    {events.map((event) => {
+                      const startTime = new Date(
+                        event.startTime
+                      ).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: true,
+                      });
+
+                      return (
+                        <div
+                          key={event.id}
+                          className="flex justify-between items-center bg-gray-700 hover:bg-gray-600 transition-all p-3 rounded-lg"
+                        >
+                          <div className="flex items-start space-x-3">
+                            <FaRegCalendarAlt className="text-xl text-yellow-500 mt-1" />
+                            <div>
+                              <h4 className="text-lg font-bold">
+                                {event.title}
+                              </h4>
+                              <p className="text-gray-400">{startTime}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-sm text-gray-400">
+                              {new Date(event.startTime).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 ) : (
-                  <p>No events scheduled. Check back later!</p>
+                  <p className="text-gray-400 mt-4">
+                    No events scheduled. Check back later!
+                  </p>
                 )}
               </div>
             </div>
           </Card>
         </section>
 
-        {/* Group Members */}
         <section className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
           <h3 className="text-2xl font-semibold mb-4">Group Members</h3>
           {members.length > 0 ? (
@@ -159,8 +218,10 @@ const GroupDetail = () => {
                 <Avatar img={member?.avatar} rounded />
                 <div className="ml-4">
                   <p className="text-lg font-semibold">{member?.username}</p>
-                  <Badge color={member?.role === "leader" ? "info" : "gray"}>
-                    {member?.role || "member"}
+                  <Badge
+                    color={member?.id === group.leaderId ? "info" : "gray"}
+                  >
+                    {member?.id === group.leaderId ? "Leader" : "Member"}
                   </Badge>
                 </div>
               </div>
@@ -171,39 +232,51 @@ const GroupDetail = () => {
         </section>
       </div>
 
-      {/* Add Member Modal */}
-      {isLeader && (
-        <Modal show={showModal} onClose={() => setShowModal(false)}>
-          <Modal.Header>Add New Member</Modal.Header>
-          <Modal.Body>
-            <div className="flex flex-col space-y-4">
-              <TextInput
-                id="newMember"
-                type="text"
-                placeholder="Username or Email"
-                value={newMember}
-                onChange={(e) => setNewMember(e.target.value)}
-              />
+      {/* Modal to Add Member */}
+      <Modal show={showModal} size="md" popup onClose={() => setShowModal(false)}>
+        <Modal.Header />
+        <Modal.Body>
+          <div className="text-center">
+            <h3 className="mb-5 text-lg font-normal">Add New Member</h3>
+            <TextInput
+              placeholder="Enter username"
+              onChange={(e) => setNewMember(e.target.value)}
+              value={newMember}
+            />
+            <div className="flex justify-center gap-4 mt-5">
+              <Button color="success" onClick={handleAddMember}>
+                Add
+              </Button>
+              <Button color="gray" onClick={() => setShowModal(false)}>
+                Cancel
+              </Button>
             </div>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button onClick={handleAddMember}>Add Member</Button>
-          </Modal.Footer>
-        </Modal>
-      )}
+          </div>
+        </Modal.Body>
+      </Modal>
+
+      {/* Drawer to Add Event */}
+      <EventDrawer
+        show={showDrawer}
+        handleClose={handleCloseDrawer}
+        groupId={id}
+        onAddEvent={handleAddEvent} // Pass the handler function to add event dynamically
+      />
     </div>
   );
 };
 
-const SidebarComponent = ({ id, setShowModal, isLeader, joinCode }) => (
+const SidebarComponent = ({ id, setShowModal, isLeader }) => (
   <div className="w-full sm:w-64 bg-gray-800 p-4 sm:p-6 flex flex-col sm:min-h-full rounded-lg sm:ml-4">
     <Tooltip content="Menu" placement="left">
-      <h2 className="text-2xl font-semibold text-[#22d3ee] mb-4 sm:mb-8">Menu</h2>
+      <h2 className="text-2xl font-semibold text-[#22d3ee] mb-4 sm:mb-8">
+        Menu
+      </h2>
     </Tooltip>
     <ul className="space-y-4 sm:space-y-6">
       <li>
         <Link
-          to={`/group/${id}`}
+          to={`/groups/${id}`}
           className="text-white flex items-center hover:bg-gray-700 p-2 sm:p-3 rounded-lg"
         >
           <FaUsers className="mr-3 text-blue-500" />
@@ -251,16 +324,7 @@ const SidebarComponent = ({ id, setShowModal, isLeader, joinCode }) => (
         </Link>
       </li>
     </ul>
-    <div className="text-gray-300 mt-auto pt-4 sm:pt-8">
-      {isLeader && (
-        <>
-          <p className="text-sm">Invite Code:</p>
-          <span className="text-lg">{joinCode}</span>
-        </>
-      )}
-    </div>
   </div>
 );
 
 export default GroupDetail;
-  

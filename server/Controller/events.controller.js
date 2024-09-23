@@ -103,32 +103,37 @@ async function createEvent(req, res) {
 // Function to schedule reminder emails and push notifications
 function scheduleReminder(startTime, members, title) {
   const startTimeDate = new Date(startTime);
-  const reminderTime = new Date(startTimeDate.getTime() - 30 * 60000); // 30 minutes before session start
+  const reminderTime = new Date(startTimeDate.getTime() - 30 * 60000); 
+
+  if (reminderTime <= new Date()) {
+    console.log('Reminder time is in the past. Skipping scheduling.');
+    return; 
+  }
 
   const cronTime = `${reminderTime.getMinutes()} ${reminderTime.getHours()} ${reminderTime.getDate()} ${reminderTime.getMonth() + 1} *`;
 
+  console.log('Scheduled cron time:', cronTime);
+
   cron.schedule(cronTime, async () => {
-    console.log(`Sending reminder emails and notifications for session: ${title}`);
-
-    // Send email reminders to all members
-    const reminderPromises = members.map(member => sendEmail(
-      member.email,
-      `Reminder: Upcoming Session ${title}`,
-      `Reminder: The session "${title}" will begin in 30 minutes.\nStart Time: ${new Date(startTime).toLocaleString()}`
-    ));
-    await Promise.all(reminderPromises);
-
-    // Push real-time notification
-    members.forEach(member => {
-      req.io.emit(`notification_${member.id}`, {
-        message: `Reminder: The session "${title}" will begin in 30 minutes.`,
+    try {
+      console.log(`Sending reminder emails and notifications for session: ${title}`);
+      const reminderPromises = members.map(member => sendEmail(
+        member.email,
+        `Reminder: Upcoming Session ${title}`,
+        `Reminder: The session "${title}" will begin in 30 minutes.\nStart Time: ${new Date(startTime).toLocaleString()}`
+      ));
+      await Promise.all(reminderPromises);
+      members.forEach(member => {
+        req.io.emit(`notification_${member.id}`, {
+          message: `Reminder: The session "${title}" will begin in 30 minutes.`,
+        });
       });
-    });
-  }, {
-    scheduled: true,
-    timezone: "Asia/Kolkata", 
-  });
+    } catch (error) {
+      console.error('Failed to send reminders:', error);
+    }
+  }, { scheduled: true, timezone: "Asia/Kolkata" });
 }
+
 
 
 async function getAllSessions(req, res) {

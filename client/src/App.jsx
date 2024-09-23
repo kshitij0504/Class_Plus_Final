@@ -12,16 +12,15 @@ import LayoutwithSidebar from "./Components/LayoutwithSidebar";
 import ParticularGroup from "./Pages/Group/ParticualarGroup";
 import NotificationSection from "./Pages/UserPage/NotificationSection";
 import Settings from "./Pages/Group/settings";
-import MainLoader from "./Components/Loader/MainLoader"; // Import MainLoader
+import MainLoader from "./Components/Loader/MainLoader"; 
 import ScheduleForm from "./Pages/Group/ScheduleForm";
 
 const App = () => {
-  const [isLoading, setIsLoading] = useState(true); // State to control the loader
+  const [isLoading, setIsLoading] = useState(true); 
 
   useEffect(() => {
-    // Simulate loader time or based on actual logic
     const timer = setTimeout(() => {
-      setIsLoading(false); // Hide loader after 3 seconds (adjust as needed)
+      setIsLoading(false); 
     }, 3000);
 
     return () => clearTimeout(timer);
