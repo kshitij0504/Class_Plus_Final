@@ -45,6 +45,9 @@ const GroupDetail = () => {
         setGroup(response.data.data);
         setJoinCode(response.data.data.joinCode);
         setMembers(response.data.data?.members || []);
+
+
+
         const sessionsResponse = await axios.get(
           `http://localhost:8000/api/groups/${id}/sessions`,
           { withCredentials: true }
@@ -78,9 +81,8 @@ const GroupDetail = () => {
   };
 
   const handleAddEvent = (newEvent) => {
-    // Add new event to the events state array
-    setEvents((prevEvents) => [newEvent, ...prevEvents]); // Add latest event at the top
-    setShowDrawer(false); // Close the drawer after adding
+    setEvents((prevEvents) => [newEvent, ...prevEvents]);
+    setShowDrawer(false); 
   };
 
   const handleOpenDrawer = () => {

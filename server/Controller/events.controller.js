@@ -11,7 +11,15 @@ const transporter = nodemailer.createTransport({
     pass: "nlni qcfk mjur qloa",
   },
 });
-
+const createNotification = async (userId, message, type = "connect") => {
+  return await prisma.GroupNotification.create({
+    data: {
+      message,
+      userId,
+      type,
+    },
+  });
+};
 // Function to send email
 async function sendEmail(to, subject, text) {
   try {
@@ -65,27 +73,39 @@ async function createEvent(req, res) {
       },
     });
 
-    // Emit real-time notification to group members
     req.io.to(groupIdInt).emit('sessionCreated', {
       message: 'A new session has been created!',
       session,
     });
 
-    // Fetch group members
     const members = await prisma.user.findMany({
       where: { groups: { some: { id: groupIdInt } } },
     });
 
-    // Send immediate email to all group members
-    const mailPromises = members.map(member => sendEmail(
+     const mailPromises = members.map(member => sendEmail(
       member.email,
       `New Session: ${title}`,
       `A new session titled "${title}" has been created by the group leader.\n\nStart Time: ${new Date(startTime).toLocaleString()}\nEnd Time: ${new Date(endTime).toLocaleString()}`
     ));
 
-    await Promise.all(mailPromises);
+    const notificationPromises = members.map((member) =>
+      createNotification(
+        member.id,
+        `A new session titled "${title}" has been created.`,
+        "connect"
+      )
+    );
 
-    // Schedule a cron job 30 minutes before the session to send reminders
+    await Promise.all([...mailPromises, ...notificationPromises]);
+
+    members.forEach((member) => {
+      req.io.emit(`notification_${member.id}`, {
+        message: `A new session titled "${title}" has been created.`,
+        type: "message",
+        createdAt: new Date(),
+      });
+    });
+ 
     scheduleReminder(startTime, members, title);
 
     res.status(201).json({
@@ -100,7 +120,7 @@ async function createEvent(req, res) {
   }
 }
 
-// Function to schedule reminder emails and push notifications
+
 function scheduleReminder(startTime, members, title) {
   const startTimeDate = new Date(startTime);
   const reminderTime = new Date(startTimeDate.getTime() - 30 * 60000); 
@@ -139,14 +159,30 @@ function scheduleReminder(startTime, members, title) {
 async function getAllSessions(req, res) {
   const { groupId } = req.params;
   const groupIdInt = parseInt(groupId, 10);
-  
+  console.log(req.user.id)
   try {
+    const group = await prisma.group.findFirst({
+      where: {
+        id: groupIdInt,
+        members: {
+          some: {
+            id: req.user.id, 
+          },
+        },
+      },
+    });
+
+    if (!group) {
+      return res.status(403).json({
+        message: "You are not authorized to view the sessions for this group.",
+      });
+    }
+
     const sessions = await prisma.session.findMany({
       where: {
         groupId: groupIdInt,
-        userId: req.user.id,
       },
-      orderBy: { startTime: "asc" },
+      orderBy: { startTime: "desc" },
     });
 
     res.status(200).json({

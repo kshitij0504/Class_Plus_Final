@@ -14,18 +14,19 @@ datasource db {
 }
 
 model User {
-  id            Int                @id @default(autoincrement())
-  username      String             @unique
-  email         String             @unique
-  password      String
-  avatar        String             @default("https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png")
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
-  groups        Group[]            @relation("GroupMembers")
-  groupsLed     Group[]            @relation("Leader")
-  verifications UserVerification[]
-  Notification  Notification[]
-  sessions      Session[]
+  id                Int                 @id @default(autoincrement())
+  username          String              @unique
+  email             String              @unique
+  password          String
+  avatar            String              @default("https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png")
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  groups            Group[]             @relation("GroupMembers")
+  groupsLed         Group[]             @relation("Leader")
+  verifications     UserVerification[]
+  Notification      Notification[]
+  GroupNotification GroupNotification[]
+  sessions          Session[]
 }
 
 model UserVerification {
@@ -56,16 +57,26 @@ model Notification {
   user      User     @relation(fields: [userId], references: [id])
 }
 
+model GroupNotification {
+  id        Int      @id @default(autoincrement())
+  message   String
+  createdAt DateTime @default(now())
+  read      Boolean  @default(false)
+  type      String // "message", "connect", "comment", etc.
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+}
+
 model Session {
-  id            Int      @id @default(autoincrement())
-  title         String
-  description   String?
-  startTime     DateTime
-  endTime       DateTime
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  userId        Int
-  user          User     @relation(fields: [userId], references: [id])
-  groupId       Int 
-  group         Group    @relation(fields: [groupId], references: [id])
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  startTime   DateTime
+  endTime     DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  groupId     Int
+  group       Group    @relation(fields: [groupId], references: [id])
 }

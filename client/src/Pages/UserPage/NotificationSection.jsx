@@ -69,7 +69,13 @@ const NotificationSection = () => {
         const response = await axios.get(
           `http://localhost:8000/api/notifications/${currentUser.id}`
         );
-        const data = response.data;
+
+        const res = await axios.get(
+          `http://localhost:8000/api/groupnotification/${currentUser.id}`
+        )
+
+        console.log(res)
+        const data = response.data && res.data;
 
         if (Array.isArray(data.notifications)) {
           setNotifications(data.notifications);

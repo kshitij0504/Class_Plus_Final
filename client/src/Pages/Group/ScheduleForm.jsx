@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 import { Button, TextInput, Textarea, Label } from 'flowbite-react';
 import toast from 'react-hot-toast';
 
-const ScheduleForm = ({groupId, onClose}) => {
+const ScheduleForm = ({onClose, groupId}) => {
   const [title, setTitle] = useState('');
   const [startDateTime, setStartDateTime] = useState('');
   const [endDateTime, setEndDateTime] = useState('');

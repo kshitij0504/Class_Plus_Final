@@ -3,7 +3,7 @@ const {
   signup,
   VerifyOTP,
   GoogleAuth,
-  signOut
+  signOut,
 } = require("../Controller/auth.controller");
 const checkEmail = require("../Controller/login.controller");
 const router = express.Router();
@@ -18,7 +18,11 @@ const {
   joinUsingCode,
 } = require("../Controller/group.controller");
 const notification = require("../Controller/notification.controller");
-const { createEvent, getAllSessions } = require("../Controller/events.controller");
+const {
+  createEvent,
+  getAllSessions,
+} = require("../Controller/events.controller");
+const prisma = require('../config/connectDb');
 
 router.post("/signup", signup);
 
@@ -48,5 +52,20 @@ router.get("/signout", signOut);
 
 router.post("/groups/:groupId/events", getUserDetailstoken, createEvent);
 
-router.get("/groups/:groupId/sessions", getUserDetailstoken, getAllSessions)
+router.get("/groups/:groupId/sessions", getUserDetailstoken, getAllSessions);
+
+//group Notification
+router.get("/groupnotification/:userId", async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const notifications = await prisma.GroupNotification.findMany({
+      where: { userId: parseInt(userId, 10) },
+      orderBy: { createdAt: "desc" },
+    });
+    res.json({ notifications });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to fetch notifications" });
+  }
+});
 module.exports = router;
