@@ -14,6 +14,7 @@ import NotificationSection from "./Pages/UserPage/NotificationSection";
 import Settings from "./Pages/Group/settings";
 import MainLoader from "./Components/Loader/MainLoader"; 
 import ScheduleForm from "./Pages/Group/ScheduleForm";
+import SessionCalendar from "./Pages/UserPage/SessionCalendar";
 
 const App = () => {
   const [isLoading, setIsLoading] = useState(true); 
@@ -46,6 +47,7 @@ const App = () => {
                 <Route path="/notification" element={<NotificationSection />} />
                 <Route path="/settings/:id" element={<Settings />} />
                 <Route path="/createsession/:groupId" element={<ScheduleForm />} />
+                <Route path="/session" element={<SessionCalendar />} />
               </Route>
             </Route>
           </Routes>

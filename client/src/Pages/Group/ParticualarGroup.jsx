@@ -21,6 +21,7 @@ import {
   FaComments,
 } from "react-icons/fa";
 import EventDrawer from "../../Components/EventDrawer";
+import EventDetailModal from "../../Components/EventDetailDrawer";
 import groupIcon from "../../assets/Group.svg"; // Ensure the path is correct
 
 const GroupDetail = () => {
@@ -35,6 +36,9 @@ const GroupDetail = () => {
   const [newMember, setNewMember] = useState("");
   const [isLeader, setIsLeader] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null); 
+  const [showEventDrawer, setShowEventDrawer] = useState(false);
+  const [rsvpStatus, setRsvpStatus] = useState(null);
 
   useEffect(() => {
     const fetchGroup = async () => {
@@ -46,12 +50,12 @@ const GroupDetail = () => {
         setJoinCode(response.data.data.joinCode);
         setMembers(response.data.data?.members || []);
 
-
-
         const sessionsResponse = await axios.get(
           `http://localhost:8000/api/groups/${id}/sessions`,
           { withCredentials: true }
         );
+
+        console.log(sessionsResponse);
         setEvents(sessionsResponse.data.data || []);
         if (currentUser.id === response.data.data.leaderId) {
           setIsLeader(true);
@@ -82,7 +86,7 @@ const GroupDetail = () => {
 
   const handleAddEvent = (newEvent) => {
     setEvents((prevEvents) => [newEvent, ...prevEvents]);
-    setShowDrawer(false); 
+    setShowDrawer(false);
   };
 
   const handleOpenDrawer = () => {
@@ -91,6 +95,19 @@ const GroupDetail = () => {
 
   const handleCloseDrawer = () => {
     setShowDrawer(false);
+  };
+
+  const handleEventClick = (event) => {
+    setSelectedEvent(event);
+    setShowEventDrawer(true);
+  };
+
+  const handleRSVP = (status) => {
+    setRsvpStatus(status);
+    setSelectedEvent((prevEvent) => ({
+      ...prevEvent,
+      isRSVP: true,
+    }));
   };
 
   if (loading) {
@@ -110,7 +127,7 @@ const GroupDetail = () => {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen bg-gray-900 text-white">
+    <div className="flex flex-col lg:flex-row min-h-screen bg-gradient-to-br from-gray-900 to-blue-900 text-white font-poppins">
       {/* Sidebar */}
       <SidebarComponent
         setShowModal={setShowModal}
@@ -119,214 +136,218 @@ const GroupDetail = () => {
         id={id}
       />
 
-      {/* Group Info */}
-      <div className="flex-1 p-4 sm:p-6 bg-gradient-to-r from-gray-900 to-black">
-        <header className="bg-blue-600 text-white p-4 sm:p-6 rounded-lg shadow-lg mb-6 flex flex-col sm:flex-row items-center justify-between">
-          <div className="mb-4 sm:mb-0">
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
-              {group.name}
-            </h1>
-            <p className="mt-2 text-lg">
-              {group.description || "No description available."}
-            </p>
+      {/* Main Content */}
+      <div className="flex-1 p-4 lg:p-8">
+        <header className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-2xl mb-8 overflow-hidden">
+          <div className="flex flex-col md:flex-row items-center justify-between p-6 md:p-8">
+            <div className="text-center md:text-left mb-4 md:mb-0">
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight">{group.name}</h1>
+              <p className="mt-2 text-lg text-blue-100">{group.description || "No description available."}</p>
+            </div>
+            <img
+              src={group.icon || "https://via.placeholder.com/150"}
+              alt="Group Icon"
+              className="h-24 w-24 md:h-32 md:w-32 rounded-full border-4 border-white shadow-lg"
+            />
           </div>
-          <img
-            src={groupIcon}
-            alt="Group Icon"
-            className="h-20 w-20 sm:h-40 sm:w-40"
-          />
         </header>
 
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8 mb-8">
-          <Card className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg border-none">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <Card className="bg-gray-800 border-none shadow-xl hover:shadow-2xl transition-shadow duration-300">
             <div className="flex items-center space-x-4">
-              <FaUsers className="text-3xl text-blue-500" />
+              <div className="p-3 bg-blue-600 rounded-full">
+                <FaUsers className="text-3xl text-white" />
+              </div>
               <div>
                 <h2 className="text-2xl font-semibold">Group Details</h2>
                 <p className="text-lg mt-2">
-                  <strong>Members:</strong> {members.length}
+                  <span className="font-medium text-blue-400">Members:</span> {members.length}
                 </p>
               </div>
             </div>
           </Card>
 
-          <Card className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg border-none">
-            <div className="flex items-start space-x-4">
-              <FaRegCalendarAlt className="text-3xl text-blue-500 mt-1" />
-              <div className="flex-1">
-                <h3 className="text-2xl font-semibold">Upcoming Events</h3>
-
+          <Card className="bg-gray-800 border-none shadow-xl hover:shadow-2xl transition-shadow duration-300">
+            <div className="flex flex-col h-full">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <div className="p-3 bg-purple-600 rounded-full">
+                    <FaRegCalendarAlt className="text-2xl text-white" />
+                  </div>
+                  <h3 className="text-2xl font-semibold">Upcoming Events</h3>
+                </div>
                 {isLeader && (
                   <Button
                     onClick={handleOpenDrawer}
-                    className="bg-blue-600 hover:bg-blue-500 text-white mb-4 mt-2"
+                    className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-medium py-2 px-4 rounded-full transition-all duration-300 ease-in-out transform hover:scale-105"
                   >
                     Add Event
                   </Button>
                 )}
-
+              </div>
+              <div className="flex-grow overflow-y-auto scrollbar-hide" style={{ maxHeight: "300px" }}>
                 {events.length > 0 ? (
-                  <div
-                    className="mt-4 space-y-4 overflow-y-auto scrollbar-hide"
-                    style={{ maxHeight: "200px" }}
-                  >
-                    {events.map((event) => {
-                      const startTime = new Date(
-                        event.startTime
-                      ).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        hour12: true,
-                      });
-
-                      return (
-                        <div
-                          key={event.id}
-                          className="flex justify-between items-center bg-gray-700 hover:bg-gray-600 transition-all p-3 rounded-lg"
-                        >
-                          <div className="flex items-start space-x-3">
-                            <FaRegCalendarAlt className="text-xl text-yellow-500 mt-1" />
-                            <div>
-                              <h4 className="text-lg font-bold">
-                                {event.title}
-                              </h4>
-                              <p className="text-gray-400">{startTime}</p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <span className="text-sm text-gray-400">
-                              {new Date(event.startTime).toLocaleDateString()}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
+                  <div className="space-y-4">
+                    {events.map((event) => (
+                      <EventCard key={event.id} event={event} onClick={() => handleEventClick(event)} />
+                    ))}
                   </div>
                 ) : (
-                  <p className="text-gray-400 mt-4">
-                    No events scheduled. Check back later!
-                  </p>
+                  <p className="text-gray-400 text-center py-8">No events scheduled. Check back later!</p>
                 )}
               </div>
             </div>
           </Card>
-        </section>
+        </div>
 
-        <section className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
-          <h3 className="text-2xl font-semibold mb-4">Group Members</h3>
-          {members.length > 0 ? (
-            members.map((member) => (
-              <div key={member?.id} className="flex items-center mb-4">
-                <Avatar img={member?.avatar} rounded />
-                <div className="ml-4">
-                  <p className="text-lg font-semibold">{member?.username}</p>
-                  <Badge
-                    color={member?.id === group.leaderId ? "info" : "gray"}
-                  >
-                    {member?.id === group.leaderId ? "Leader" : "Member"}
-                  </Badge>
-                </div>
-              </div>
-            ))
-          ) : (
-            <p>No members listed. Add members to start collaborating!</p>
-          )}
+        {/* Group Members Section */}
+        <section className="mt-8 bg-gray-800 rounded-2xl shadow-xl p-6">
+          <h3 className="text-2xl font-semibold mb-6">Group Members</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {members.length > 0 ? (
+              members.map((member) => (
+                <MemberCard key={member?.id} member={member} isLeader={member?.id === group.leaderId} />
+              ))
+            ) : (
+              <p className="col-span-full text-center text-gray-400">No members listed. Add members to start collaborating!</p>
+            )}
+          </div>
         </section>
       </div>
 
-      {/* Modal to Add Member */}
-      <Modal show={showModal} size="md" popup onClose={() => setShowModal(false)}>
-        <Modal.Header />
-        <Modal.Body>
-          <div className="text-center">
-            <h3 className="mb-5 text-lg font-normal">Add New Member</h3>
-            <TextInput
-              placeholder="Enter username"
-              onChange={(e) => setNewMember(e.target.value)}
-              value={newMember}
-            />
-            <div className="flex justify-center gap-4 mt-5">
-              <Button color="success" onClick={handleAddMember}>
-                Add
-              </Button>
-              <Button color="gray" onClick={() => setShowModal(false)}>
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </Modal.Body>
-      </Modal>
+      {/* Modals and Drawers */}
+      <AddMemberModal
+        showModal={showModal}
+        setShowModal={setShowModal}
+        newMember={newMember}
+        setNewMember={setNewMember}
+        handleAddMember={handleAddMember}
+      />
 
-      {/* Drawer to Add Event */}
       <EventDrawer
         show={showDrawer}
         handleClose={handleCloseDrawer}
         groupId={id}
-        onAddEvent={handleAddEvent} // Pass the handler function to add event dynamically
+        onAddEvent={handleAddEvent}
+      />
+
+      <EventDetailModal
+        show={showEventDrawer}
+        handleClose={() => setShowEventDrawer(false)}
+        event={selectedEvent}
+        rsvpStatus={rsvpStatus}
+        onRSVP={handleRSVP}
       />
     </div>
   );
 };
 
 const SidebarComponent = ({ id, setShowModal, isLeader }) => (
-  <div className="w-full sm:w-64 bg-gray-800 p-4 sm:p-6 flex flex-col sm:min-h-full rounded-lg sm:ml-4">
-    <Tooltip content="Menu" placement="left">
-      <h2 className="text-2xl font-semibold text-[#22d3ee] mb-4 sm:mb-8">
-        Menu
-      </h2>
-    </Tooltip>
-    <ul className="space-y-4 sm:space-y-6">
-      <li>
-        <Link
-          to={`/groups/${id}`}
-          className="text-white flex items-center hover:bg-gray-700 p-2 sm:p-3 rounded-lg"
-        >
-          <FaUsers className="mr-3 text-blue-500" />
-          Overview
-        </Link>
-      </li>
+  <div className="w-full lg:w-64 bg-gray-800 p-6 flex flex-col rounded-2xl shadow-xl ml-2 h-screen mt-1">
+    <h2 className="text-2xl font-semibold text-blue-400 mb-8">Menu</h2>
+    <ul className="space-y-4">
+      <SidebarItem to={`/groups/${id}`} icon={FaUsers} text="Overview" />
       {isLeader && (
-        <li>
-          <button
-            className="text-white flex items-center hover:bg-gray-700 p-2 sm:p-3 rounded-lg w-full text-left"
-            onClick={() => setShowModal(true)}
-          >
-            <FaUserPlus className="mr-3 text-blue-500" />
-            Add Members
-          </button>
-        </li>
+        <SidebarItem onClick={() => setShowModal(true)} icon={FaUserPlus} text="Add Members" />
       )}
       {isLeader && (
-        <li>
-          <Link
-            to={`/settings/${id}`}
-            className="text-white flex items-center hover:bg-gray-700 p-2 sm:p-3 rounded-lg"
-          >
-            <FaCogs className="mr-3 text-blue-500" />
-            Settings
-          </Link>
-        </li>
+        <SidebarItem to={`/settings/${id}`} icon={FaCogs} text="Settings" />
       )}
-      <li>
-        <Link
-          to="/chat"
-          className="text-white flex items-center hover:bg-gray-700 p-2 sm:p-3 rounded-lg"
-        >
-          <FaComments className="mr-3 text-blue-500" />
-          Chat
-        </Link>
-      </li>
-      <li>
-        <Link
-          to="/notifications"
-          className="text-white flex items-center hover:bg-gray-700 p-2 sm:p-3 rounded-lg"
-        >
-          <FaBell className="mr-3 text-blue-500" />
-          Notifications
-        </Link>
-      </li>
+      <SidebarItem to="/chat" icon={FaComments} text="Chat" />
+      <SidebarItem to="/notifications" icon={FaBell} text="Notifications" />
     </ul>
   </div>
 );
+
+const SidebarItem = ({ to, icon: Icon, text, onClick }) => {
+  const content = (
+    <div className="flex items-center space-x-3 text-gray-300 hover:text-white hover:bg-gray-700 p-3 rounded-lg transition-all duration-300">
+      <Icon className="text-xl" />
+      <span>{text}</span>
+    </div>
+  );
+
+  return onClick ? (
+    <li>
+      <button className="w-full text-left" onClick={onClick}>
+        {content}
+      </button>
+    </li>
+  ) : (
+    <li>
+      <Link to={to}>{content}</Link>
+    </li>
+  );
+};
+
+const EventCard = ({ event, onClick }) => {
+  const startTime = new Date(event.startTime).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+
+  return (
+    <div
+      className="bg-gray-700 hover:bg-gray-600 transition-all p-4 rounded-lg cursor-pointer transform"
+      onClick={onClick}
+    >
+      <div className="flex justify-between items-center">
+        <div className="flex items-start space-x-3">
+          <div className="p-2 bg-yellow-500 rounded-full">
+            <FaRegCalendarAlt className="text-xl text-white" />
+          </div>
+          <div>
+            <h4 className="text-lg font-bold">{event.title}</h4>
+            <p className="text-blue-300">{startTime}</p>
+          </div>
+        </div>
+        <div className="text-right">
+          <span className="text-sm text-gray-400">
+            {new Date(event.startTime).toLocaleDateString()}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const MemberCard = ({ member, isLeader }) => (
+  <div className="bg-gray-700 p-4 rounded-lg flex items-center space-x-4">
+    <Avatar img={member?.avatar} rounded size="lg" />
+    <div>
+      <p className="text-lg font-semibold">{member?.username}</p>
+      <Badge color={isLeader ? "info" : "gray"} className="mt-1">
+        {isLeader ? "Leader" : "Member"}
+      </Badge>
+    </div>
+  </div>
+);
+
+const AddMemberModal = ({ showModal, setShowModal, newMember, setNewMember, handleAddMember }) => (
+  <Modal show={showModal} size="md" popup onClose={() => setShowModal(false)}>
+    <Modal.Header />
+    <Modal.Body>
+      <div className="text-center">
+        <h3 className="mb-5 text-lg font-normal">Add New Member</h3>
+        <TextInput
+          placeholder="Enter username"
+          onChange={(e) => setNewMember(e.target.value)}
+          value={newMember}
+          className="mb-4"
+        />
+        <div className="flex justify-center gap-4">
+          <Button color="success" onClick={handleAddMember}>
+            Add
+          </Button>
+          <Button color="gray" onClick={() => setShowModal(false)}>
+            Cancel
+          </Button>
+        </div>
+      </div>
+    </Modal.Body>
+  </Modal>
+);
+
 
 export default GroupDetail;

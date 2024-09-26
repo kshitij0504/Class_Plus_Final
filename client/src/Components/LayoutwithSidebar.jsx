@@ -32,7 +32,7 @@ const LayoutwithSidebar = () => {
         <SidebarItem
           icon={<Calendar size={20} />}
           text="Schedule"
-          to="/schedule"
+          to="/session"
         />
         <SidebarItem
           icon={<IoIosNotifications size={20} />}

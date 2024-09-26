@@ -27,6 +27,7 @@ model User {
   Notification      Notification[]
   GroupNotification GroupNotification[]
   sessions          Session[]
+  RSVPs             RSVP[]
 }
 
 model UserVerification {
@@ -79,4 +80,22 @@ model Session {
   user        User     @relation(fields: [userId], references: [id])
   groupId     Int
   group       Group    @relation(fields: [groupId], references: [id])
+  RSVPs       RSVP[]
+}
+
+model RSVP {
+  id        Int        @id @default(autoincrement())
+  status    RSVPStatus
+  session   Session    @relation(fields: [sessionId], references: [id])
+  sessionId Int
+  user      User       @relation(fields: [userId], references: [id])
+  userId    Int
+
+  @@unique([sessionId, userId]) // One RSVP per user per session
+}
+
+enum RSVPStatus {
+  ACCEPTED
+  DECLINED
+  TENTATIVE
 }

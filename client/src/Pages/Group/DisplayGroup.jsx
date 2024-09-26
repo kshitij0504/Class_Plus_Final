@@ -266,9 +266,6 @@ const DisplayGroup = () => {
                     <h5 className="text-2xl font-bold tracking-tight text-white">
                       {group.name}
                     </h5>
-                    <p className="font-normal text-gray-200 mb-4">
-                      {group.description || "No description available"}
-                    </p>
                     <Button color="light" size="sm">
                       View Group
                     </Button>
@@ -279,7 +276,6 @@ const DisplayGroup = () => {
           )}
         </div>
 
-        {/* Create Group Modal */}
         <Modal show={openCreateModal} onClose={() => setOpenCreateModal(false)}>
           <Modal.Header>Create A New Study Group</Modal.Header>
           <Modal.Body>
@@ -321,7 +317,6 @@ const DisplayGroup = () => {
           </Modal.Footer>
         </Modal>
 
-        {/* Join Group Modal */}
         <Modal show={openJoinModal} onClose={() => setOpenJoinModal(false)}>
           <Modal.Header>Join A Study Group</Modal.Header>
           <Modal.Body>
@@ -353,7 +348,6 @@ const DisplayGroup = () => {
           </Modal.Footer>
         </Modal>
 
-        {/* Delete Group Confirmation Modal */}
         <Modal show={openDeleteModal} onClose={() => setOpenDeleteModal(false)}>
           <Modal.Header>Confirm Group Deletion</Modal.Header>
           <Modal.Body>

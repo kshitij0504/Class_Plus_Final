@@ -7,7 +7,6 @@ import {
   FiMessageCircle,
   FiUserPlus,
   FiAlertCircle,
-  FiChevronDown,
 } from "react-icons/fi";
 
 const Notification = ({ message, createdAt, read, type }) => {

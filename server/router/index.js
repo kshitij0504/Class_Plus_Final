@@ -21,6 +21,9 @@ const notification = require("../Controller/notification.controller");
 const {
   createEvent,
   getAllSessions,
+  RSVP,
+  getSessionRSVPs,
+  getParticularUserRsvp,
 } = require("../Controller/events.controller");
 const prisma = require('../config/connectDb');
 
@@ -68,4 +71,11 @@ router.get("/groupnotification/:userId", async (req, res) => {
     res.status(500).json({ message: "Failed to fetch notifications" });
   }
 });
+
+router.post("/session/:sessionId/rsvp",  getUserDetailstoken, RSVP);
+
+router.get("/session/:sessionId/getAllrsvp",   getUserDetailstoken, getSessionRSVPs);
+
+router.get("/session/:sessionId/userRSVP",getUserDetailstoken,getParticularUserRsvp)
+
 module.exports = router;
