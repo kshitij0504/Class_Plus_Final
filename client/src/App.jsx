@@ -15,6 +15,7 @@ import Settings from "./Pages/Group/settings";
 import MainLoader from "./Components/Loader/MainLoader"; 
 import ScheduleForm from "./Pages/Group/ScheduleForm";
 import SessionCalendar from "./Pages/UserPage/SessionCalendar";
+import Chat from "./Pages/Group/Chat"
 
 const App = () => {
   const [isLoading, setIsLoading] = useState(true); 
@@ -44,6 +45,7 @@ const App = () => {
                 <Route path="/updateprofile" element={<UpdateProfile />} />
                 <Route path="/displaygroups" element={<DisplayGroup />} />
                 <Route path="/groups/:id" element={<ParticularGroup />} />
+                <Route path="/groups/:id/chat" element={<Chat />} />
                 <Route path="/notification" element={<NotificationSection />} />
                 <Route path="/settings/:id" element={<Settings />} />
                 <Route path="/createsession/:groupId" element={<ScheduleForm />} />

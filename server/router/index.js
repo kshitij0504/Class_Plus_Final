@@ -27,6 +27,7 @@ const {
   getUserSessionsWithRSVP,
 } = require("../Controller/events.controller");
 const prisma = require('../config/connectDb');
+const { sendMessage, getMessage } = require("../Controller/message.controller");
 
 router.post("/signup", signup);
 
@@ -80,5 +81,9 @@ router.get("/session/:sessionId/getAllrsvp",   getUserDetailstoken, getSessionRS
 router.get("/session/:sessionId/userRSVP",getUserDetailstoken,getParticularUserRsvp)
 
 router.get("/sessions/rsvp", getUserDetailstoken,getUserSessionsWithRSVP)
+
+router.post("/:groupId/messages",getUserDetailstoken, sendMessage)
+
+router.get("/:groupId/getmessage", getUserDetailstoken, getMessage)
 
 module.exports = router;

@@ -32,6 +32,21 @@ app.use((req, res, next) => {
 
 io.on('connection', (socket) => {
   console.log('A client connected');
+
+  socket.on("joinGroup", (groupId) => {
+    socket.join(`group_${groupId}`);
+    console.log(`Socket ${socket.id} joined group_${groupId}`);
+  });
+
+  // Leave a group room
+  socket.on("leaveGroup", (groupId) => {
+    socket.leave(`group_${groupId}`);
+    console.log(`Socket ${socket.id} left group_${groupId}`);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.id);
+  });
 });
 
 const PORT = process.env.PORT || 8000;

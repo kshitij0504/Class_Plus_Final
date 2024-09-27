@@ -260,15 +260,7 @@ async function deleteGroup(req, res) {
         .status(403)
         .json({ error: "You are not authorized to delete this group" });
     }
-
-    // await prisma.RSVP.deleteMany({
-    //   where: { groupId: parseInt(id)  },
-    // })
-
-    // await prisma.session.deleteMany({
-    //   where: { groupId:  parseInt(id) },
-    // });  
-
+    
     await prisma.group.delete({
       where: { id: parseInt(id) },
     });

@@ -255,7 +255,8 @@ const SidebarComponent = ({ id, setShowModal, isLeader }) => (
       {isLeader && (
         <SidebarItem to={`/settings/${id}`} icon={FaCogs} text="Settings" />
       )}
-      <SidebarItem to="/chat" icon={FaComments} text="Chat" />
+      {/* <SidebarItem to="/chat" icon={FaComments} text="Chat" /> */}
+      <SidebarItem to={`/groups/${id}/chat`} icon={FaComments} text="Chat" />
       <SidebarItem to="/notifications" icon={FaBell} text="Notifications" />
     </ul>
   </div>
