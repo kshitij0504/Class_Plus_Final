@@ -386,10 +386,55 @@ async function getSessionRSVPs(req, res) {
     });
   }
 }
+
+async function getUserSessionsWithRSVP(req, res) {
+  const userId = req.user.id;
+
+  try {
+    const sessions = await prisma.session.findMany({
+      where: {
+        group: {
+          members: {
+            some: { id: userId },
+          },
+        },
+      },
+      include: {
+        RSVPs: {
+          where: { userId: userId },
+        },
+      },
+    });
+
+    const sessionsWithRSVP = sessions.map((session) => {
+      const rsvpStatus = session.RSVPs.length > 0 ? session.RSVPs[0].status : "No Response";
+      return {
+        sessionId: session.id,
+        title: session.title,
+        description: session.description,
+        startTime: session.startTime,
+        endTime: session.endTime,
+        rsvpStatus: rsvpStatus,
+      };
+    });
+
+    res.status(200).json({
+      message: "Sessions fetched successfully",
+      data: sessionsWithRSVP,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Failed to fetch user sessions with RSVP status",
+    });
+  }
+}
+
 module.exports = {
   createEvent,
   getAllSessions,
   RSVP,
   getSessionRSVPs,
   getParticularUserRsvp,
+  getUserSessionsWithRSVP
 };

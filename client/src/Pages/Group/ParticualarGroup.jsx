@@ -76,8 +76,10 @@ const GroupDetail = () => {
         `http://localhost:8000/api/groups/${id}/add-member`,
         { username: newMember }
       );
-      setMembers((prevMembers) => [...prevMembers, response.data.member]);
       setShowModal(false);
+
+      setMembers((prevMembers) => [...prevMembers, response.data.member]);
+      console.log(members)
       setNewMember("");
     } catch (error) {
       console.error("Error adding member:", error);
@@ -85,6 +87,7 @@ const GroupDetail = () => {
   };
 
   const handleAddEvent = (newEvent) => {
+    console.log(newEvent)
     setEvents((prevEvents) => [newEvent, ...prevEvents]);
     setShowDrawer(false);
   };
@@ -206,7 +209,7 @@ const GroupDetail = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {members.length > 0 ? (
               members.map((member) => (
-                <MemberCard key={member?.id} member={member} isLeader={member?.id === group.leaderId} />
+                <MemberCard key={member.id} member={member} isLeader={member.id === group.leaderId} />
               ))
             ) : (
               <p className="col-span-full text-center text-gray-400">No members listed. Add members to start collaborating!</p>
@@ -228,7 +231,6 @@ const GroupDetail = () => {
         show={showDrawer}
         handleClose={handleCloseDrawer}
         groupId={id}
-        onAddEvent={handleAddEvent}
       />
 
       <EventDetailModal
@@ -325,27 +327,24 @@ const MemberCard = ({ member, isLeader }) => (
 );
 
 const AddMemberModal = ({ showModal, setShowModal, newMember, setNewMember, handleAddMember }) => (
-  <Modal show={showModal} size="md" popup onClose={() => setShowModal(false)}>
-    <Modal.Header />
+  <Modal show={showModal} onClose={() => setShowModal(false)}>
+    <Modal.Header>Add New Member</Modal.Header>
     <Modal.Body>
-      <div className="text-center">
-        <h3 className="mb-5 text-lg font-normal">Add New Member</h3>
+      <div className="space-y-6">
         <TextInput
+          type="text"
           placeholder="Enter username"
-          onChange={(e) => setNewMember(e.target.value)}
           value={newMember}
-          className="mb-4"
+          onChange={(e) => setNewMember(e.target.value)}
         />
-        <div className="flex justify-center gap-4">
-          <Button color="success" onClick={handleAddMember}>
-            Add
-          </Button>
-          <Button color="gray" onClick={() => setShowModal(false)}>
-            Cancel
-          </Button>
-        </div>
       </div>
     </Modal.Body>
+    <Modal.Footer>
+      <Button onClick={handleAddMember}>Add</Button>
+      <Button color="gray" onClick={() => setShowModal(false)}>
+        Cancel
+      </Button>
+    </Modal.Footer>
   </Modal>
 );
 

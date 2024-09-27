@@ -24,6 +24,7 @@ const {
   RSVP,
   getSessionRSVPs,
   getParticularUserRsvp,
+  getUserSessionsWithRSVP,
 } = require("../Controller/events.controller");
 const prisma = require('../config/connectDb');
 
@@ -77,5 +78,7 @@ router.post("/session/:sessionId/rsvp",  getUserDetailstoken, RSVP);
 router.get("/session/:sessionId/getAllrsvp",   getUserDetailstoken, getSessionRSVPs);
 
 router.get("/session/:sessionId/userRSVP",getUserDetailstoken,getParticularUserRsvp)
+
+router.get("/sessions/rsvp", getUserDetailstoken,getUserSessionsWithRSVP)
 
 module.exports = router;

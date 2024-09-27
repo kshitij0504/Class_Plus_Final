@@ -14,7 +14,6 @@ import { LocalizationProvider, DateTimePicker } from "@mui/x-date-pickers";
 import { toast, Toaster } from "react-hot-toast";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 
-// Updated theme for a Virtual Study Group Platform
 const studyGroupTheme = createTheme({
   palette: {
     mode: "light",
