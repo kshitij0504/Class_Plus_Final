@@ -3,7 +3,7 @@ import { Dialog, DialogTitle, DialogContent, IconButton } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import ScheduleForm from '../Pages/Group/ScheduleForm';
 
-const EventDrawer = ({ show, handleClose, groupId }) => {
+const EventDrawer = ({ show, handleClose, groupId, handleAddEvent }) => {
   return (
     <Dialog
       open={show}
@@ -32,7 +32,7 @@ const EventDrawer = ({ show, handleClose, groupId }) => {
         </IconButton>
       </DialogTitle>
       <DialogContent dividers>
-        <ScheduleForm onClose={handleClose} groupId={groupId} />
+        <ScheduleForm onClose={handleClose} groupId={groupId} handleAddEvent={handleAddEvent} />
       </DialogContent>
     </Dialog>
   );

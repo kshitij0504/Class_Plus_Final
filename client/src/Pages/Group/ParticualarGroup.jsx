@@ -21,8 +21,8 @@ import {
   FaComments,
 } from "react-icons/fa";
 import EventDrawer from "../../Components/EventDrawer";
-import EventDetailModal from "../../Components/EventDetailDrawer";
-import groupIcon from "../../assets/Group.svg"; // Ensure the path is correct
+import EventDetailModal from "../../Components/EventDetailDrawer"; // Ensure correct import
+import groupIcon from "../../assets/Group.svg";
 
 const GroupDetail = () => {
   const { currentUser } = useSelector((state) => state.user || {});
@@ -36,9 +36,16 @@ const GroupDetail = () => {
   const [newMember, setNewMember] = useState("");
   const [isLeader, setIsLeader] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState(null); 
+  const [selectedEvent, setSelectedEvent] = useState(null);
   const [showEventDrawer, setShowEventDrawer] = useState(false);
   const [rsvpStatus, setRsvpStatus] = useState(null);
+  const [eventRSVPs, setEventRSVPs] = useState({
+    ACCEPTED: [],
+    DECLINED: [],
+    TENTATIVE: [],
+  });
+  const [totalAccepted, setTotalAccepted] = useState(0);
+  const [rsvpLoading, setRsvpLoading] = useState(false);
 
   useEffect(() => {
     const fetchGroup = async () => {
@@ -55,8 +62,18 @@ const GroupDetail = () => {
           { withCredentials: true }
         );
 
-        console.log(sessionsResponse);
+        console.log(sessionsResponse.data);
         setEvents(sessionsResponse.data.data || []);
+        console.log(events);
+        if (Array.isArray(sessionsResponse.data.data)) {
+          setEvents(sessionsResponse.data.data);
+        } else {
+          console.error(
+            "Expected 'data' to be an array but got:",
+            sessionsResponse.data.data
+          );
+          setEvents([]); // Set to an empty array if the data structure is unexpected
+        }
         if (currentUser.id === response.data.data.leaderId) {
           setIsLeader(true);
         }
@@ -72,22 +89,29 @@ const GroupDetail = () => {
 
   const handleAddMember = async () => {
     try {
+      console.log("Adding member:", newMember); // Log before the API call
       const response = await axios.post(
         `http://localhost:8000/api/groups/${id}/add-member`,
-        { username: newMember }
+        { username: newMember } 
       );
+      
+      const newMemberData = response.data.data; // Assuming the response has the new member data
+       // Log the added member data
+  
+      setMembers((prevMembers) => {
+        const updatedMembers = [...prevMembers, newMemberData.newMember];
+        return updatedMembers;
+      });
+  
       setShowModal(false);
-
-      setMembers((prevMembers) => [...prevMembers, response.data.member]);
-      console.log(members)
-      setNewMember("");
+      setNewMember(""); // Clear the input field after adding the member
     } catch (error) {
       console.error("Error adding member:", error);
     }
   };
 
   const handleAddEvent = (newEvent) => {
-    console.log(newEvent)
+    console.log(newEvent);
     setEvents((prevEvents) => [newEvent, ...prevEvents]);
     setShowDrawer(false);
   };
@@ -100,8 +124,39 @@ const GroupDetail = () => {
     setShowDrawer(false);
   };
 
-  const handleEventClick = (event) => {
+  const handleEventClick = async (event) => {
     setSelectedEvent(event);
+    if (isLeader) {
+      setRsvpLoading(true);
+      try {
+        const response = await axios.get(
+          `http://localhost:8000/api/session/${event.id}/getAllrsvp`,
+          {
+            withCredentials: true,
+          }
+        );
+
+        const categorizedRSVPs = {
+          ACCEPTED: [],
+          DECLINED: [],
+          TENTATIVE: [],
+        };
+
+        response.data.data.forEach((rsvp) => {
+          const status = rsvp.status.toUpperCase();
+          if (categorizedRSVPs[status]) {
+            categorizedRSVPs[status].push(rsvp.user);
+          }
+        });
+
+        setEventRSVPs(categorizedRSVPs);
+        setTotalAccepted(categorizedRSVPs.ACCEPTED.length);
+      } catch (error) {
+        console.error("Error fetching RSVP data:", error);
+      } finally {
+        setRsvpLoading(false);
+      }
+    }
     setShowEventDrawer(true);
   };
 
@@ -120,6 +175,9 @@ const GroupDetail = () => {
       </div>
     );
   }
+  if (!members) {
+    return <div>Loading...</div>; // or some loading spinner
+  }
 
   if (!group) {
     return (
@@ -130,7 +188,7 @@ const GroupDetail = () => {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen bg-gradient-to-br from-gray-900 to-blue-900 text-white font-poppins">
+    <div className="flex flex-col lg:flex-row min-h-screen bg-gray-950 text-white font-poppins">
       {/* Sidebar */}
       <SidebarComponent
         setShowModal={setShowModal}
@@ -144,11 +202,15 @@ const GroupDetail = () => {
         <header className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-2xl mb-8 overflow-hidden">
           <div className="flex flex-col md:flex-row items-center justify-between p-6 md:p-8">
             <div className="text-center md:text-left mb-4 md:mb-0">
-              <h1 className="text-4xl md:text-5xl font-bold tracking-tight">{group.name}</h1>
-              <p className="mt-2 text-lg text-blue-100">{group.description || "No description available."}</p>
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
+                {group.name}
+              </h1>
+              <p className="mt-2 text-lg text-blue-100">
+                {group.description || "No description available."}
+              </p>
             </div>
             <img
-              src={group.icon || "https://via.placeholder.com/150"}
+              src={groupIcon}
               alt="Group Icon"
               className="h-24 w-24 md:h-32 md:w-32 rounded-full border-4 border-white shadow-lg"
             />
@@ -164,7 +226,8 @@ const GroupDetail = () => {
               <div>
                 <h2 className="text-2xl font-semibold">Group Details</h2>
                 <p className="text-lg mt-2">
-                  <span className="font-medium text-blue-400">Members:</span> {members.length}
+                  <span className="font-medium text-blue-400">Members:</span>{" "}
+                  {members.length}
                 </p>
               </div>
             </div>
@@ -188,15 +251,24 @@ const GroupDetail = () => {
                   </Button>
                 )}
               </div>
-              <div className="flex-grow overflow-y-auto scrollbar-hide" style={{ maxHeight: "300px" }}>
+              <div
+                className="flex-grow overflow-y-auto scrollbar-hide"
+                style={{ maxHeight: "300px" }}
+              >
                 {events.length > 0 ? (
                   <div className="space-y-4">
                     {events.map((event) => (
-                      <EventCard key={event.id} event={event} onClick={() => handleEventClick(event)} />
+                      <EventCard
+                        key={event.id}
+                        event={event}
+                        onClick={() => handleEventClick(event)}
+                      />
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-400 text-center py-8">No events scheduled. Check back later!</p>
+                  <p className="text-gray-400 text-center py-8">
+                    No events scheduled. Check back later!
+                  </p>
                 )}
               </div>
             </div>
@@ -207,12 +279,20 @@ const GroupDetail = () => {
         <section className="mt-8 bg-gray-800 rounded-2xl shadow-xl p-6">
           <h3 className="text-2xl font-semibold mb-6">Group Members</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {members.length > 0 ? (
-              members.map((member) => (
-                <MemberCard key={member.id} member={member} isLeader={member.id === group.leaderId} />
-              ))
+            {members && members.length > 0 ? (
+              members.map((member) => {
+                return (
+                  <MemberCard
+                    key={member.id}
+                    member={member}
+                    isLeader={member.id === group.leaderId}
+                  />
+                );
+              })
             ) : (
-              <p className="col-span-full text-center text-gray-400">No members listed. Add members to start collaborating!</p>
+              <p className="col-span-full text-center text-gray-400">
+                No members listed. Add members to start collaborating!
+              </p>
             )}
           </div>
         </section>
@@ -231,6 +311,7 @@ const GroupDetail = () => {
         show={showDrawer}
         handleClose={handleCloseDrawer}
         groupId={id}
+        handleAddEvent={handleAddEvent}
       />
 
       <EventDetailModal
@@ -239,6 +320,10 @@ const GroupDetail = () => {
         event={selectedEvent}
         rsvpStatus={rsvpStatus}
         onRSVP={handleRSVP}
+        rsvps={isLeader ? eventRSVPs : null}
+        totalAccepted={isLeader ? totalAccepted : null}
+        isLeader={isLeader}
+        rsvpLoading={rsvpLoading}
       />
     </div>
   );
@@ -250,12 +335,15 @@ const SidebarComponent = ({ id, setShowModal, isLeader }) => (
     <ul className="space-y-4">
       <SidebarItem to={`/groups/${id}`} icon={FaUsers} text="Overview" />
       {isLeader && (
-        <SidebarItem onClick={() => setShowModal(true)} icon={FaUserPlus} text="Add Members" />
+        <SidebarItem
+          onClick={() => setShowModal(true)}
+          icon={FaUserPlus}
+          text="Add Members"
+        />
       )}
       {isLeader && (
         <SidebarItem to={`/settings/${id}`} icon={FaCogs} text="Settings" />
       )}
-      {/* <SidebarItem to="/chat" icon={FaComments} text="Chat" /> */}
       <SidebarItem to={`/groups/${id}/chat`} icon={FaComments} text="Chat" />
       <SidebarItem to="/notifications" icon={FaBell} text="Notifications" />
     </ul>
@@ -284,6 +372,7 @@ const SidebarItem = ({ to, icon: Icon, text, onClick }) => {
 };
 
 const EventCard = ({ event, onClick }) => {
+  console.log(event.id);
   const startTime = new Date(event.startTime).toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
@@ -317,9 +406,9 @@ const EventCard = ({ event, onClick }) => {
 
 const MemberCard = ({ member, isLeader }) => (
   <div className="bg-gray-700 p-4 rounded-lg flex items-center space-x-4">
-    <Avatar img={member?.avatar} rounded size="lg" />
+    <Avatar img={member.avatar} rounded size="lg" />
     <div>
-      <p className="text-lg font-semibold">{member?.username}</p>
+      <p className="text-lg font-semibold">{member.username || member.email}</p>
       <Badge color={isLeader ? "info" : "gray"} className="mt-1">
         {isLeader ? "Leader" : "Member"}
       </Badge>
@@ -327,7 +416,13 @@ const MemberCard = ({ member, isLeader }) => (
   </div>
 );
 
-const AddMemberModal = ({ showModal, setShowModal, newMember, setNewMember, handleAddMember }) => (
+const AddMemberModal = ({
+  showModal,
+  setShowModal,
+  newMember,
+  setNewMember,
+  handleAddMember,
+}) => (
   <Modal show={showModal} onClose={() => setShowModal(false)}>
     <Modal.Header>Add New Member</Modal.Header>
     <Modal.Body>
@@ -348,6 +443,5 @@ const AddMemberModal = ({ showModal, setShowModal, newMember, setNewMember, hand
     </Modal.Footer>
   </Modal>
 );
-
 
 export default GroupDetail;

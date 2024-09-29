@@ -183,7 +183,7 @@ async function addMemberToGroup(req, res) {
   const { email, username } = req.body;
 
   console.log(
-    `Received groupId: ${groupId}, email: ${email}, name: ${username}`
+    `Received groupId: ${groupId}, email: ${email}, username: ${username}`
   );
 
   if (!Number.isInteger(groupIdInt)) {
@@ -193,10 +193,11 @@ async function addMemberToGroup(req, res) {
   if (!email && !username) {
     return res
       .status(400)
-      .json({ error: "Either email or name must be provided" });
+      .json({ error: "Either email or username must be provided" });
   }
 
   try {
+    // Find the user by email or username
     const user = await prisma.user.findUnique({
       where: email ? { email } : { username },
     });
@@ -205,6 +206,7 @@ async function addMemberToGroup(req, res) {
       return res.status(404).json({ error: "User not found" });
     }
 
+    // Update the group and add the user as a member
     const group = await prisma.group.update({
       where: { id: groupIdInt },
       data: {
@@ -214,6 +216,7 @@ async function addMemberToGroup(req, res) {
       },
     });
 
+    // Create a notification for the user
     await prisma.notification.create({
       data: {
         userId: user.id,
@@ -221,19 +224,29 @@ async function addMemberToGroup(req, res) {
       },
     });
 
+    // Emit a notification event
     req.io.emit(`notification_${user.id}`, {
       message: `You have been added to group ${group.name}.`,
     });
 
+    // Respond with the group details and the newly added member's information
     res.status(200).json({
       message: "Member added to group successfully",
-      data: group,
+      data: {
+        group,
+        newMember: {
+          id: user.id,
+          username: user.username, // or user.name if that’s the correct field
+          email: user.email,
+        },
+      },
     });
   } catch (error) {
     console.error("Error adding member to group:", error);
     res.status(500).json({ error: "Failed to add member to group" });
   }
 }
+
 
 async function deleteGroup(req, res) {
   const { id } = req.params;

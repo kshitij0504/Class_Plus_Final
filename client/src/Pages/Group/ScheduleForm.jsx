@@ -41,7 +41,7 @@ const studyGroupTheme = createTheme({
   spacing: 8, 
 });
 
-const ScheduleForm = ({ onClose, groupId }) => {
+const ScheduleForm = ({ onClose, groupId,handleAddEvent }) => {
   const [title, setTitle] = useState("");
   const [startDateTime, setStartDateTime] = useState(null);
   const [endDateTime, setEndDateTime] = useState(null);
@@ -65,7 +65,14 @@ const ScheduleForm = ({ onClose, groupId }) => {
         },
         { withCredentials: true }
       );
-      console.log(response);
+      const newEvent = {
+        id: response.data.id, 
+        title,
+        description,
+        startTime: startDateTime.toISOString(),
+        endTime: endDateTime.toISOString(),
+    };
+      handleAddEvent(newEvent);
       onClose();
       toast.success("Session scheduled successfully!");
     } catch (error) {
