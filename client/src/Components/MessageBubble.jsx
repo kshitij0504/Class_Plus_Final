@@ -1,85 +1,112 @@
-import React, { useState } from "react";
-import { Avatar } from "flowbite-react";
-import moment from "moment";
+import React from 'react';
+import { format } from 'date-fns';
+import { MoreHorizontal, CheckCheck } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
-const MessageBubble = ({ message, currentUser, showReadStatus }) => {
-  const [showUserDetails, setShowUserDetails] = useState(false);
+const MessageBubble = ({ message, currentUser }) => {
+  // Add null checks and default values
+  if (!message || !currentUser) {
+    console.error('MessageBubble: Missing required props', { message, currentUser });
+    return null;
+  }
+
   const isOwnMessage = message.userId === currentUser.id;
-
-  const handleToggleUserDetails = () => {
-    setShowUserDetails(!showUserDetails);
+  
+  const formatTime = (date) => {
+    try {
+      return format(new Date(date), 'h:mm a');
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return '';
+    }
   };
 
-  const messageClass = isOwnMessage
-    ? "bg-blue-600 text-white self-end"
-    : "bg-gray-700 text-gray-100 self-start";
+  const getInitials = (username = '') => {
+    return username
+      .slice(0, 2)
+      .toUpperCase();
+  };
+
+  // Safely access user data with default values
+  const user = message.user || {};
+  const username = user.username || 'Unknown User';
+  const avatar = user.avatar || '';
 
   return (
-    <div className={`flex items-start mb-4 ${isOwnMessage ? "justify-end" : "justify-start"}`}>
-      {/* Avatar for the sender (other users) */}
+    <div
+      className={`flex mb-4 ${
+        isOwnMessage ? 'justify-end' : 'justify-start'
+      } items-end gap-2`}
+    >
       {!isOwnMessage && (
-        <div className="relative">
-          <Avatar
-            img={message.user.avatar || "https://via.placeholder.com/150"}
-            rounded
-            size="sm"
-            className="cursor-pointer hover:opacity-90 transition-opacity duration-200 ease-in-out"
-            onClick={handleToggleUserDetails}
-          />
-          {showUserDetails && (
-            <div className="absolute left-0 mt-2 w-48 p-4 bg-gray-800 text-white rounded-lg shadow-lg z-10 transition-transform duration-200 ease-in-out transform scale-95 origin-top-left">
-              <p className="font-bold">{message.user.username}</p>
-              <p className="text-sm">{message.user.email}</p>
-              <p className="text-xs mt-1">{`Joined on: ${new Date(
-                message.user.joinedAt
-              ).toLocaleDateString()}`}</p>
+        <div className="flex-shrink-0">
+          {avatar ? (
+            <img 
+              src={avatar} 
+              alt={username}
+              className="w-8 h-8 rounded-full object-cover"
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-medium text-white">
+              {getInitials(username)}
             </div>
           )}
         </div>
       )}
-
-      {/* Message Bubble */}
-      <div
-        className={`max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-lg shadow-lg relative ${
-          isOwnMessage ? "ml-2" : "mr-2"
-        } ${messageClass}`}
-      >
-        {/* User name (if it's not the current user) */}
+      
+      <div className={`group relative max-w-[70%] ${isOwnMessage ? 'order-1' : 'order-2'}`}>
         {!isOwnMessage && (
-          <p className="text-sm font-semibold">{message.user.username}</p>
+          <div className="text-sm text-gray-400 mb-1 ml-1">
+            {username}
+          </div>
         )}
+        
+        <div
+          className={`relative px-4 py-2 rounded-2xl ${
+            isOwnMessage
+              ? 'bg-blue-600 text-white rounded-br-sm'
+              : 'bg-gray-700 text-white rounded-bl-sm'
+          }`}
+        >
+          <p className="text-sm whitespace-pre-wrap break-words">
+            {message.content || ''}
+          </p>
+          
+          <div className={`flex items-center gap-1 text-xs mt-1 ${
+            isOwnMessage ? 'text-blue-200' : 'text-gray-400'
+          }`}>
+            <span>{formatTime(message.createdAt)}</span>
+            {isOwnMessage && (
+              <CheckCheck className="w-4 h-4" />
+            )}
+          </div>
+        </div>
 
-        {/* Message content */}
-        <p className="mt-1">{message.content}</p>
-
-        {/* Timestamp and Read Status */}
-        <div className="flex justify-between items-center mt-2">
-          <span className="text-xs text-gray-400">
-            {moment(message.createdAt).fromNow()}
-          </span>
-
-          {/* Read status (check marks) for own messages */}
-          {isOwnMessage && showReadStatus && (
-            <span className="text-xs text-gray-400 ml-2">
-              {message.isRead ? (
-                <span className="text-blue-400">&#10003;&#10003;</span> // Two check marks for read
-              ) : (
-                <span className="text-gray-400">&#10003;</span> // One check mark for sent
+        <div className={`absolute top-0 ${
+          isOwnMessage ? 'left-0 -translate-x-full' : 'right-0 translate-x-full'
+        } opacity-0 group-hover:opacity-100 transition-opacity`}>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="p-1 hover:bg-gray-700 rounded-full">
+              <MoreHorizontal className="w-4 h-4 text-gray-400" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => navigator.clipboard.writeText(message.content)}>
+                Copy Text
+              </DropdownMenuItem>
+              {isOwnMessage && (
+                <DropdownMenuItem className="text-red-500">
+                  Delete Message
+                </DropdownMenuItem>
               )}
-            </span>
-          )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
-
-      {/* Avatar for the current user (own message) */}
-      {isOwnMessage && (
-        <Avatar
-          img={currentUser.avatar || "https://via.placeholder.com/150"}
-          rounded
-          size="sm"
-          className="ml-2"
-        />
-      )}
     </div>
   );
 };

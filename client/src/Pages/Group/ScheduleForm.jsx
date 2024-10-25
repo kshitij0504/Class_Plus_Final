@@ -1,179 +1,195 @@
 import React, { useState } from "react";
-import axios from "axios";
-import {
-  Button,
-  TextField,
-  Box,
-  Typography,
-  Container,
-  Paper,
-  Stack,
-} from "@mui/material";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { LocalizationProvider, DateTimePicker } from "@mui/x-date-pickers";
-import { toast, Toaster } from "react-hot-toast";
-import { createTheme, ThemeProvider } from "@mui/material/styles";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Clock } from "lucide-react";
 
-const studyGroupTheme = createTheme({
-  palette: {
-    mode: "light",
-    primary: {
-      main: "#1976d2", 
-    },
-    secondary: {
-      main: "#ff9800", 
-    },
-    background: {
-      default: "#f5f5f5", 
-      paper: "#ffffff", 
-    },
-    text: {
-      primary: "#333333",
-      secondary: "#555555", 
-    },
-  },
-  typography: {
-    fontFamily: "Poppins, sans-serif", 
-    h4: {
-      fontWeight: 600,
-    },
-  },
-  spacing: 8, 
-});
-
-const ScheduleForm = ({ onClose, groupId,handleAddEvent }) => {
+const ScheduleForm = ({ onClose, groupId, handleAddEvent }) => {
   const [title, setTitle] = useState("");
-  const [startDateTime, setStartDateTime] = useState(null);
-  const [endDateTime, setEndDateTime] = useState(null);
+  const [startDate, setStartDate] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [endTime, setEndTime] = useState("");
   const [description, setDescription] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Validate that end date is after start date
+    
+    const startDateTime = new Date(`${startDate}T${startTime}`);
+    const endDateTime = new Date(`${endDate}T${endTime}`);
+
     if (endDateTime <= startDateTime) {
-      toast.error("End Date & Time must be after Start Date & Time.");
+      alert("End Date & Time must be after Start Date & Time.");
       return;
     }
+
     try {
-      const response = await axios.post(
+      const response = await fetch(
         `http://localhost:8000/api/groups/${groupId}/events`,
         {
-          title,
-          startTime: startDateTime.toISOString(),
-          endTime: endDateTime.toISOString(),
-          description,
-        },
-        { withCredentials: true }
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title,
+            startTime: startDateTime.toISOString(),
+            endTime: endDateTime.toISOString(),
+            description,
+          }),
+        }
       );
+
+      if (!response.ok) throw new Error("Failed to schedule session");
+
+      const data = await response.json();
       const newEvent = {
-        id: response.data.id, 
+        id: data.id,
         title,
         description,
         startTime: startDateTime.toISOString(),
         endTime: endDateTime.toISOString(),
-    };
+      };
+      
       handleAddEvent(newEvent);
       onClose();
-      toast.success("Session scheduled successfully!");
+      alert("Session scheduled successfully!");
     } catch (error) {
-      console.error(
-        "Error scheduling session:",
-        error.response?.data || error.message
-      );
-      toast.error("Failed to schedule session.");
+      console.error("Error scheduling session:", error);
+      alert("Failed to schedule session.");
     }
   };
 
   return (
-    <ThemeProvider theme={studyGroupTheme}>
-      <Container component="main" maxWidth="sm">
-        <Toaster position="top-center" />
-        <Paper
-          elevation={3}
-          sx={{
-            p: 4,
-            mt: 8,
-            borderRadius: 2,
-            boxShadow: "0 4px 20px rgba(0, 0, 0, 0.1)",
-          }}
-        >
-          <Typography component="h1" variant="h4" align="center" gutterBottom>
+    <div className="w-full">
+      <Card className="w-full max-w-lg mx-auto shadow-lg">
+        <CardHeader className="space-y-2 border-b pb-4">
+          <CardTitle className="text-2xl font-semibold text-center text-gray-800">
             Schedule a New Session
-          </Typography>
-          <Box
-            component="form"
-            onSubmit={handleSubmit}
-            noValidate
-            sx={{ mt: 3 }}
-          >
-            <Stack spacing={3}>
-              <TextField
+          </CardTitle>
+          <CardDescription className="text-center text-gray-500">
+            Fill in the details below to schedule your study session
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6 mt-6">
+            {/* Session Title */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Session Title
+              </label>
+              <Input
                 required
-                fullWidth
-                id="title"
-                label="Title"
-                name="title"
-                autoFocus
+                placeholder="Enter session title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                variant="outlined"
+                className="w-full"
               />
-              <LocalizationProvider dateAdapter={AdapterDateFns}>
-                <DateTimePicker
-                  label="Start Date & Time"
-                  value={startDateTime}
-                  onChange={(newValue) => setStartDateTime(newValue)}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
+            </div>
+
+            {/* Date and Time Inputs */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Start Date and Time */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Start Date
+                  </label>
+                  <Input
+                    type="date"
+                    required
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full"
+                    min={new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Start Time
+                  </label>
+                  <div className="relative">
+                    <Input
+                      type="time"
                       required
-                      fullWidth
-                      variant="outlined"
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                      className="w-full"
                     />
-                  )}
-                  minDateTime={new Date()} // Ensuring start time can't be in the past
-                />
-                <DateTimePicker
-                  label="End Date & Time"
-                  value={endDateTime}
-                  onChange={(newValue) => setEndDateTime(newValue)}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
+                    <Clock className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+                  </div>
+                </div>
+              </div>
+
+              {/* End Date and Time */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    End Date
+                  </label>
+                  <Input
+                    type="date"
+                    required
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full"
+                    min={startDate || new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    End Time
+                  </label>
+                  <div className="relative">
+                    <Input
+                      type="time"
                       required
-                      fullWidth
-                      variant="outlined"
+                      value={endTime}
+                      onChange={(e) => setEndTime(e.target.value)}
+                      className="w-full"
                     />
-                  )}
-                  minDateTime={startDateTime} // End time can't be before start time
-                />
-              </LocalizationProvider>
-              <TextField
-                fullWidth
-                id="description"
-                label="Description"
-                name="description"
-                multiline
-                rows={4}
+                    <Clock className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Description
+              </label>
+              <Textarea
+                placeholder="Enter session description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                variant="outlined"
+                className="min-h-[100px]"
               />
+            </div>
+
+            {/* Buttons */}
+            <div className="flex gap-4 pt-4">
               <Button
                 type="submit"
-                fullWidth
-                variant="contained"
-                sx={{ mt: 3, mb: 2 }}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2"
               >
-                <Typography component="span" align="center" gutterBottom>
-                  Schedule Session
-                </Typography>
+                Schedule Session
               </Button>
-            </Stack>
-          </Box>
-        </Paper>
-      </Container>
-    </ThemeProvider>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                className="w-full border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-2"
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

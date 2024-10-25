@@ -3,83 +3,91 @@ import axios from "axios";
 import { formatDistanceToNow } from "date-fns";
 import { useSelector } from "react-redux";
 import io from "socket.io-client";
-import {
-  FiMessageCircle,
-  FiUserPlus,
-  FiAlertCircle,
-} from "react-icons/fi";
+import { Bell, MessageSquare, UserPlus, Users2, Bell as BellIcon } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 
-const Notification = ({ message, createdAt, read, type }) => {
+const NotificationItem = ({ message, createdAt, read, type }) => {
   const date = new Date(createdAt);
 
   const getNotificationIcon = (type) => {
-    switch (type) {
-      case "message":
-        return <FiMessageCircle className="text-blue-400" />;
-      case "connect":
-        return <FiUserPlus className="text-green-400" />;
-      case "comment":
-        return <FiAlertCircle className="text-purple-400" />;
-      default:
-        return <FiAlertCircle className="text-gray-400" />;
-    }
-  };
+    const iconProps = { 
+      className: "h-5 w-5",
+      strokeWidth: 1.5 
+    };
 
-  const getNotificationLabel = (type) => {
     switch (type) {
       case "message":
-        return "Message";
+        return <MessageSquare {...iconProps} className="text-blue-500" />;
       case "connect":
-        return "Connect";
-      case "comment":
-        return "Comment";
+        return <UserPlus {...iconProps} className="text-green-500" />;
+      case "group":
+        return <Users2 {...iconProps} className="text-red-500" />;
       default:
-        return "Notification";
+        return <Bell {...iconProps} className="text-gray-500" />;
     }
   };
 
   return (
-    <div
-      className={`flex items-start p-4 mb-2 rounded-lg shadow-md transition-all duration-200  bg-white hover:bg-gray-600 hover:shadow-lg`}
-    >
-      <div className="mr-4">{getNotificationIcon(type)}</div>
-      <div className="flex-grow">
-        <div className="flex justify-between items-center">
-          <p className="text-sm text-black">{getNotificationLabel(type)}</p>
-          <span className="text-xs text-black">
-            {isNaN(date) ? "Invalid date" : `${formatDistanceToNow(date)} ago`}
-          </span>
+    <div className={`p-4 ${!read ? 'bg-blue-50/50 dark:bg-blue-950/20' : ''} rounded-lg transition-colors`}>
+      <div className="flex items-start gap-4">
+        <div className="mt-1">
+          {getNotificationIcon(type)}
         </div>
-        <p className="text-black font-medium">{message}</p>
+        <div className="flex-1 space-y-1">
+          <p className="text-sm font-medium text-primary">
+            {type ? type.charAt(0).toUpperCase() + type.slice(1) : "Unknown"}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {message}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {isNaN(date) ? "Invalid date" : `${formatDistanceToNow(date)} ago`}
+          </p>
+        </div>
       </div>
     </div>
   );
 };
 
 const NotificationSection = () => {
-  const { currentUser } = useSelector((state) => state.user || {});
-  const [notifications, setNotifications] = useState([]);
+  const { currentUser, token } = useSelector((state) => ({
+    currentUser: state.user.currentUser,
+    token: state.user.token,
+  }));
+  const [userNotifications, setUserNotifications] = useState([]);
+  const [groupNotifications, setGroupNotifications] = useState([]);
+  const [activeTab, setActiveTab] = useState("user");
+  const [unreadCount, setUnreadCount] = useState({ user: 0, group: 0 });
 
   useEffect(() => {
     const fetchNotifications = async () => {
-      if (!currentUser || !currentUser.id) return;
+      if (!currentUser?.id) return;
 
       try {
-        const response = await axios.get(
-          `http://localhost:8000/api/notifications/${currentUser.id}`
-        );
+        const [userResponse, groupResponse] = await Promise.all([
+          axios.get(`http://localhost:8000/api/notifications/${currentUser.id}`),
+          axios.get(`http://localhost:8000/api/groupnotification/${currentUser.id}`)
+        ]);
 
-        const res = await axios.get(
-          `http://localhost:8000/api/groupnotification/${currentUser.id}`
-        )
+        if (userResponse.data?.notifications) {
+          setUserNotifications(userResponse.data.notifications);
+          setUnreadCount(prev => ({
+            ...prev,
+            user: userResponse.data.notifications.filter(n => !n.read).length
+          }));
+        }
 
-        console.log(res)
-        const data = response.data && res.data;
-
-        if (Array.isArray(data.notifications)) {
-          setNotifications(data.notifications);
-        } else {
-          console.error("Notifications response is not an array:", data);
+        if (groupResponse.data?.notifications) {
+          setGroupNotifications(groupResponse.data.notifications);
+          setUnreadCount(prev => ({
+            ...prev,
+            group: groupResponse.data.notifications.filter(n => !n.read).length
+          }));
         }
       } catch (error) {
         console.error("Error fetching notifications:", error);
@@ -87,62 +95,128 @@ const NotificationSection = () => {
     };
 
     fetchNotifications();
-  }, [currentUser.id]);
+  }, [currentUser]);
 
   useEffect(() => {
-    if (!currentUser || !currentUser.id) return;
+    if (!currentUser?.id) return;
 
-    const socket = io("http://localhost:8000", {
-      withCredentials: true,
+    const socket = io("http://localhost:8000",{
+      auth: { token: token },
     });
 
-    socket.on("connect", () => {
-      console.log("Connected to server");
-    });
+    socket.on("connect", () => console.log("Connected to server"));
 
     socket.on(`notification_${currentUser.id}`, (notification) => {
-      setNotifications((prevNotifications) => [
-        notification,
-        ...prevNotifications,
-      ]); // Add new notification to the top
+      if (!notification.id || !notification.type) return;
+
+      if (notification.type === "group") {
+        setGroupNotifications(prev => [notification, ...prev]);
+        setUnreadCount(prev => ({ ...prev, group: prev.group + 1 }));
+      } else {
+        setUserNotifications(prev => [notification, ...prev]);
+        setUnreadCount(prev => ({ ...prev, user: prev.user + 1 }));
+      }
     });
 
-    socket.on("connect_error", (err) => {
-      console.error("Socket connection error:", err);
-    });
+    socket.on("connect_error", (err) => console.error("Socket connection error:", err));
 
-    return () => {
-      socket.disconnect();
-    };
-  }, [currentUser.id]);
+    return () => socket.disconnect();
+  }, [currentUser?.id]);
+
+  const markAllAsRead = () => {
+    if (activeTab === "user") {
+      setUserNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      setUnreadCount(prev => ({ ...prev, user: 0 }));
+    } else {
+      setGroupNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      setUnreadCount(prev => ({ ...prev, group: 0 }));
+    }
+  };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-900">
-      <header className="bg-gray-800 text-white py-4 shadow-md">
-        <h1 className="text-4xl font-bold text-center">Notifications</h1>
-      </header>
-      <main className="flex-grow flex flex-col items-center p-4">
-        <div className="w-full max-w-lg h-full overflow-y-auto scrollbar-hide relative">
-          {Array.isArray(notifications) && notifications.length > 0 ? (
-            notifications.map((notification) => (
-              <Notification
-                key={notification.id}
-                message={notification.message}
-                createdAt={notification.createdAt}
-                read={notification.read}
-                type={notification.type}
-              />
-            ))
-          ) : (
-            <p className="p-4 text-center text-gray-400">No notifications</p>
-          )}
+    <div className="min-h-screen bg-gray-800 dark:bg-gray-900">
+      <div className="sticky top-0 z-10 bg-gray-800 dark:bg-gray-950 border-b">
+        <div className="container flex h-16 items-center px-4 md:px-6 lg:px-8">
+          <BellIcon className="mr-2 h-6 w-6" />
+          <h1 className="text-xl font-semibold">Notifications</h1>
         </div>
+      </div>
+
+      <main className="container mx-auto p-4 md:p-6 lg:p-8">
+        <Card className="max-w-full md:max-w-4xl mx-auto">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-xl md:text-2xl">Recent Activity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="user" className="w-full" onValueChange={setActiveTab}>
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="user" className="relative">
+                  User Notifications
+                  {unreadCount.user > 0 && (
+                    <Badge variant="destructive" className="ml-2">
+                      {unreadCount.user}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="group">
+                  Group Notifications
+                  {unreadCount.group > 0 && (
+                    <Badge variant="destructive" className="ml-2">
+                      {unreadCount.group}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              </TabsList>
+
+              <div className="flex justify-end mb-4">
+                <Button variant="outline" size="sm" onClick={markAllAsRead}>
+                  Mark all as read
+                </Button>
+              </div>
+
+              <TabsContent value="user">
+                <ScrollArea className="h-[400px] md:h-[500px] rounded-md border p-2 md:p-4">
+                  <div className="space-y-4">
+                    {userNotifications.map((notification, index) => (
+                      <React.Fragment key={notification.id}>
+                        <NotificationItem
+                          message={notification.message}
+                          createdAt={notification.createdAt}
+                          read={notification.read}
+                          type={notification.type}
+                        />
+                        {index < userNotifications.length - 1 && (
+                          <Separator className="my-2" />
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+
+              <TabsContent value="group">
+                <ScrollArea className="h-[400px] md:h-[500px] rounded-md border p-2 md:p-4">
+                  <div className="space-y-4">
+                    {groupNotifications.map((notification, index) => (
+                      <React.Fragment key={notification.id}>
+                        <NotificationItem
+                          message={notification.message}
+                          createdAt={notification.createdAt}
+                          read={notification.read}
+                          type={notification.type}
+                        />
+                        {index < groupNotifications.length - 1 && (
+                          <Separator className="my-2" />
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
       </main>
-      <footer className="bg-gray-800 text-gray-400 text-center py-4 w-full">
-        <div className="flex justify-center items-center">
-          <p className="text-sm">© 2024 Your Company. All rights reserved.</p>
-        </div>
-      </footer>
     </div>
   );
 };

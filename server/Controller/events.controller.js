@@ -108,7 +108,7 @@ async function createEvent(req, res) {
     members.forEach((member) => {
       req.io.emit(`notification_${member.id}`, {
         message: `A new session titled "${title}" has been created.`,
-        type: "message",
+        type: "group",
         createdAt: new Date(),
       });
     });
@@ -249,6 +249,55 @@ async function getAllSessions(req, res) {
     console.log(error);
     res.status(500).json({
       message: "Failed To Fetch the Session",
+    });
+  }
+}
+
+async function getTopSessionsForUser(req, res) {
+  const userId = req.user.id;
+
+  try {
+    const upcomingSessions = await prisma.session.findMany({
+      where: {
+        group: {
+          members: {
+            some: { id: userId }, // The user is a member of the group
+          },
+        },
+        startTime: {
+          gte: new Date(), // Only future sessions
+        },
+      },
+      include: {
+        group: true, // Include the group information
+      },
+      orderBy: {
+        startTime: "asc", // Order by upcoming sessions
+      },
+      take: 3, // Limit to top 3 sessions
+    });
+
+    const response = upcomingSessions.map((session) => ({
+      sessionId: session.id,
+      title: session.title,
+      description: session.description,
+      startTime: session.startTime,
+      endTime: session.endTime,
+      group: {
+        id: session.group.id,
+        name: session.group.name,
+        leaderId: session.group.leaderId,
+      },
+    }));
+
+    res.status(200).json({
+      message: "Top 3 upcoming sessions fetched successfully",
+      data: response,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Failed to fetch top 3 sessions",
     });
   }
 }
@@ -430,11 +479,13 @@ async function getUserSessionsWithRSVP(req, res) {
   }
 }
 
+
 module.exports = {
   createEvent,
   getAllSessions,
   RSVP,
   getSessionRSVPs,
   getParticularUserRsvp,
-  getUserSessionsWithRSVP
+  getUserSessionsWithRSVP,
+  getTopSessionsForUser
 };

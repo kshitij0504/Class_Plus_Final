@@ -42,6 +42,7 @@ const SessionCalendar = () => {
       try {
         const response = await axios.get('http://localhost:8000/api/sessions/rsvp', { withCredentials: true });
         const responseData = response.data;
+        console.log(responseData)
 
         if (Array.isArray(responseData.data)) {
           const events = responseData.data.map((session, index) => {

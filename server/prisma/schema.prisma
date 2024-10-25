@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -23,7 +20,9 @@ model User {
   updatedAt         DateTime            @updatedAt
   groups            Group[]             @relation("GroupMembers")
   messages          Message[]           @relation("UserMessages")
-  groupsLed         Group[]             @relation("Leader")
+  groupsLed         Group[]             @relation("GroupLeaders")
+  meetingsHosted    Meeting[]           @relation("MeetingHost")
+  meetings          Meeting[]           @relation("MeetingParticipants")
   verifications     UserVerification[]
   Notification      Notification[]
   GroupNotification GroupNotification[]
@@ -43,12 +42,15 @@ model Group {
   name        String
   description String?
   leaderId    Int
-  leader      User      @relation("Leader", fields: [leaderId], references: [id])
+  leader      User      @relation("GroupLeaders", fields: [leaderId], references: [id])
   members     User[]    @relation("GroupMembers")
   joinCode    String    @unique
   createdAt   DateTime  @default(now())
   messages    Message[] @relation("GroupMessages")
   sessions    Session[]
+  meetings    Meeting[]
+
+  Meeting Meeting[] @relation("MeetingGroup")
 }
 
 model Notification {
@@ -103,11 +105,28 @@ model Message {
   userId    Int
   groupId   Int
   user      User     @relation("UserMessages", fields: [userId], references: [id])
-  group     Group    @relation("GroupMessages", fields: [groupId], references: [id])
+  group     Group    @relation("GroupMessages", fields: [groupId], references: [id],onDelete: Cascade)
 }
 
 enum RSVPStatus {
   ACCEPTED
   DECLINED
   TENTATIVE
+}
+
+model Meeting {
+  id           Int      @id @default(autoincrement())
+  title        String
+  startTime    DateTime
+  duration     Int // Duration in minutes
+  meetingId    String   @unique // Unique meeting ID for joining
+  password     String // Meeting password
+  description  String?
+  group        Group    @relation("MeetingGroup", fields: [groupId], references: [id])
+  groupId      Int
+  host         User     @relation("MeetingHost", fields: [hostId], references: [id])
+  hostId       Int
+  participants User[]   @relation("MeetingParticipants")
+  createdAt    DateTime @default(now())
+  Group        Group[]
 }

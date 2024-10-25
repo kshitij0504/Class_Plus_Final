@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import io from "socket.io-client";
+import axios from "axios"; // Import axios for API requests
 import Header from "../Components/Header";
 import { SiGooglemeet } from "react-icons/si";
 import { AiFillSchedule } from "react-icons/ai";
@@ -31,36 +32,62 @@ const Home = () => {
     return savedNotifications ? JSON.parse(savedNotifications) : [];
   });
 
+  const [upcomingSessions, setUpcomingSessions] = useState([]); 
   const dailyQuote = quotes[Math.floor(Math.random() * quotes.length)];
 
   useEffect(() => {
     if (!currentUser || !currentUser.id) return;
 
-    const socket = io("http://localhost:8000", {
-      withCredentials: true,
-    });
-
-    socket.on("connect", () => {
-      console.log("Connected to server");
-    });
-
-    socket.on(`notification_${currentUser.id}`, (notification) => {
-      setNotifications((prevNotifications) => {
-        const updatedNotifications = [...prevNotifications, notification];
-
-        localStorage.setItem(
-          "notifications",
-          JSON.stringify(updatedNotifications)
+    const fetchUpcomingSessions = async () => {
+      try {
+        const { data } = await axios.get(
+          "http://localhost:8000/api/users/me/top-sessions",
+          {
+            withCredentials: true,
+          }
         );
-
-        return updatedNotifications;
-      });
-    });
-
-    return () => {
-      socket.disconnect();
+    
+        console.log("API Response:", data); // Log the entire response
+    
+        if (data && data.data && Array.isArray(data.data)) {
+          setUpcomingSessions(data.data); 
+        } else {
+          setUpcomingSessions([]); 
+        }
+      } catch (error) {
+        console.error("Error fetching upcoming sessions:", error);
+        setUpcomingSessions([]); // Set to empty array in case of error
+      }
     };
-  }, [currentUser.id]);
+    
+
+    fetchUpcomingSessions();
+
+    // const socket = io("http://localhost:8000", {
+    //   withCredentials: true,
+    // });
+
+    // socket.on("connect", () => {
+    //   console.log("Connected to server");
+    // });
+
+    // socket.on(`notification_${currentUser.id}`, (notification) => {
+    //   setNotifications((prevNotifications) => {
+    //     const updatedNotifications = [...prevNotifications, notification];
+
+    //     localStorage.setItem(
+    //       "notifications",
+    //       JSON.stringify(updatedNotifications)
+    //     );
+
+    //     return updatedNotifications;
+    //   });
+    // });
+
+    // return () => {
+    //   socket.disconnect();
+    // };
+  }, [currentUser.id, currentUser.token]);
 
   return (
     <section className="flex flex-col gap-5 p-4 text-white mt-0">
@@ -121,15 +148,21 @@ const Home = () => {
             <AiFillSchedule /> Daily Schedule
           </h3>
           <ul className="space-y-1 md:space-y-2 text-black/80">
-            <li className="p-2 md:p-3 rounded-md bg-white/20">
-              Task 1 - 10:00 AM
-            </li>
-            <li className="p-2 md:p-3 rounded-md bg-white/20">
-              Task 2 - 11:30 AM
-            </li>
-            <li className="p-2 md:p-3 rounded-md bg-white/20">
-              Task 3 - 1:00 PM
-            </li>
+            {upcomingSessions.length > 0 ? (
+              upcomingSessions.map((session, index) => (
+                <li key={index} className="p-2 md:p-3 rounded-md bg-white/20">
+                  {session.title} -{" "}
+                  {new Date(session.startTime).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </li>
+              ))
+            ) : (
+              <li className="p-2 md:p-3 rounded-md bg-white/20">
+                No upcoming sessions
+              </li>
+            )}
           </ul>
         </motion.div>
 

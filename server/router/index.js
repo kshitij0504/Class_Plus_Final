@@ -25,9 +25,16 @@ const {
   getSessionRSVPs,
   getParticularUserRsvp,
   getUserSessionsWithRSVP,
+  getTopSessionsForUser,
 } = require("../Controller/events.controller");
-const prisma = require('../config/connectDb');
+const prisma = require("../config/connectDb");
 const { sendMessage, getMessage } = require("../Controller/message.controller");
+
+const {
+  getAllmeeting,
+  createMeeting,
+  joinMeeting,
+} = require("../Controller/meeting.controller");
 
 router.post("/signup", signup);
 
@@ -59,7 +66,6 @@ router.post("/groups/:groupId/events", getUserDetailstoken, createEvent);
 
 router.get("/groups/:groupId/sessions", getUserDetailstoken, getAllSessions);
 
-//group Notification
 router.get("/groupnotification/:userId", async (req, res) => {
   const { userId } = req.params;
   try {
@@ -74,16 +80,36 @@ router.get("/groupnotification/:userId", async (req, res) => {
   }
 });
 
-router.post("/session/:sessionId/rsvp",  getUserDetailstoken, RSVP);
+router.post("/session/:sessionId/rsvp", getUserDetailstoken, RSVP);
 
-router.get("/session/:sessionId/getAllrsvp",   getUserDetailstoken, getSessionRSVPs);
+router.get(
+  "/session/:sessionId/getAllrsvp",
+  getUserDetailstoken,
+  getSessionRSVPs
+);
 
-router.get("/session/:sessionId/userRSVP",getUserDetailstoken,getParticularUserRsvp)
+router.get(
+  "/session/:sessionId/userRSVP",
+  getUserDetailstoken,
+  getParticularUserRsvp
+);
 
-router.get("/sessions/rsvp", getUserDetailstoken,getUserSessionsWithRSVP)
+router.get("/sessions/rsvp", getUserDetailstoken, getUserSessionsWithRSVP);
 
-router.post("/:groupId/messages",getUserDetailstoken, sendMessage)
+router.post("/:groupId/messages", getUserDetailstoken, sendMessage);
 
-router.get("/:groupId/getmessage", getUserDetailstoken, getMessage)
+router.get("/:groupId/getmessage", getUserDetailstoken, getMessage);
+
+router.get(
+  "/users/me/top-sessions",
+  getUserDetailstoken,
+  getTopSessionsForUser
+);
+
+router.post("/meetings/schedule", getUserDetailstoken, createMeeting);
+
+router.get("/group/meetings/:groupId", getUserDetailstoken, getAllmeeting);
+
+router.get("/meetings/join", getUserDetailstoken, joinMeeting);
 
 module.exports = router;

@@ -94,7 +94,7 @@ const StudySessionCalendar = ({ events, onRSVPUpdate }) => {
     setErrorRSVP(null);
 
     try {
-      const response = await axios.put(
+      const response = await axios.post(
         `http://localhost:8000/api/sessions/${selectedEvent.id}/rsvp`,
         { rsvpStatus: newStatus },
         { withCredentials: true }
@@ -204,19 +204,20 @@ const StudySessionCalendar = ({ events, onRSVPUpdate }) => {
                   <Typography variant="body1">
                     {selectedEvent?.description || "No description available."}
                   </Typography>
+                  
 
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  {/* <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Typography variant="body1">RSVP Status:</Typography>
                     <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
                       {selectedEvent.rsvpStatus}
                     </Typography>
-                  </Box>
+                  </Box> */}
                 </Box>
               ) : (
                 <CircularProgress />
               )}
             </DialogContent>
-            <DialogActions>
+            {/* <DialogActions>
               <Button
                 onClick={() => handleRSVP('Confirmed')}
                 color="success"
@@ -236,7 +237,7 @@ const StudySessionCalendar = ({ events, onRSVPUpdate }) => {
               <Button onClick={handleCloseModal} color="primary">
                 Close
               </Button>
-            </DialogActions>
+            </DialogActions> */}
             {errorRSVP && <Typography color="error" sx={{ padding: 2 }}>{errorRSVP}</Typography>}
           </Dialog>
         </CardContent>

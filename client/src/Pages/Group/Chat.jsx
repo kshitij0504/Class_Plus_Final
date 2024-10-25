@@ -1,17 +1,29 @@
 import React, { useEffect, useState, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom"; // Added useNavigate
+import { useParams, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { Button, TextInput, Spinner, Avatar } from "flowbite-react";
-import { Send, Smile, MoreVertical, Phone, Video, Paperclip, ArrowLeft } from "lucide-react"; // Added ArrowLeft
+import {
+  Send,
+  Smile,
+  MoreVertical,
+  Phone,
+  Video,
+  Paperclip,
+  ArrowLeft,
+} from "lucide-react";
 import { io } from "socket.io-client";
 import EmojiPicker from "emoji-picker-react";
 import axios from "axios";
 import MessageBubble from "../../Components/MessageBubble";
 
 const ModernChat = () => {
-  const { currentUser } = useSelector((state) => state.user || {});
+  const { currentUser, token } = useSelector((state) => ({
+    currentUser: state.user.currentUser,
+    token: state.user.token,
+  }));
+
   const { id } = useParams();
-  const navigate = useNavigate(); // Initialize useNavigate
+  const navigate = useNavigate();
   const [group, setGroup] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
@@ -20,23 +32,17 @@ const ModernChat = () => {
   const socketRef = useRef();
   const messagesEndRef = useRef(null);
 
-  const handleEmojiClick = (emojiObject) => {
-    setNewMessage((prevInput) => prevInput + emojiObject.emoji);
-  };
-
   useEffect(() => {
     const fetchGroupAndMessages = async () => {
       try {
-        const groupResponse = await axios.get(
-          `http://localhost:8000/api/groups/${id}`,
-          { headers: { Authorization: `Bearer ${currentUser.token}` } }
-        );
+        const groupResponse = await axios.get(`http://localhost:8000/api/groups/${id}`, {
+          withCredentials: true,
+        });
         setGroup(groupResponse.data.data);
 
-        const messagesResponse = await axios.get(
-          `http://localhost:8000/api/${id}/getmessage`,
-          { withCredentials: true }
-        );
+        const messagesResponse = await axios.get(`http://localhost:8000/api/${id}/getmessage`, {
+          withCredentials: true,
+        });
         setMessages(messagesResponse.data.data);
       } catch (error) {
         console.error("Error fetching group details or messages:", error);
@@ -50,17 +56,18 @@ const ModernChat = () => {
 
   useEffect(() => {
     socketRef.current = io("http://localhost:8000", {
-      auth: { token: currentUser.token },
+      auth: { token: token },
     });
+    console.log(id)
 
-    socketRef.current.emit("joinGroup", id);
+    socketRef.current.emit("joinChat", id);
 
-    socketRef.current.on("newMessage", (message) => {
-      setMessages((prevMessages) => [...prevMessages, message]);
+    socketRef.current.on("messageReceived", (newMessage) => {
+      setMessages(prev => [...prev, newMessage]);
     });
 
     return () => {
-      socketRef.current.emit("leaveGroup", id);
+      socketRef.current.emit("leaveChat", id);
       socketRef.current.disconnect();
     };
   }, [id, currentUser]);
@@ -73,12 +80,16 @@ const ModernChat = () => {
     if (newMessage.trim() === "") return;
 
     try {
+      socketRef.current.emit("sendMessage", {
+        groupId: id,
+        content: newMessage
+      });
+      
       await axios.post(
         `http://localhost:8000/api/${id}/messages`,
         { content: newMessage },
         { withCredentials: true }
       );
-
       setNewMessage("");
       setShowEmojiPicker(false);
     } catch (error) {
@@ -94,7 +105,7 @@ const ModernChat = () => {
   };
 
   const handleBack = () => {
-    navigate(-1); // Navigate back to the previous page (group page)
+    navigate(-1);
   };
 
   if (loading) {
@@ -117,106 +128,71 @@ const ModernChat = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-900 text-white font-sans px-4 sm:px-6 lg:px-8">
+    <div className="flex flex-col h-screen bg-gray-900 text-white font-sans p-4">
       {/* Header */}
-      <header className="bg-gradient-to-r from-gray-800 to-blue-800 p-4 flex items-center justify-between shadow-lg rounded-lg">
+      <header className="bg-gray-800 p-4 rounded-lg shadow-md flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          {/* Back Button */}
           <Button
             variant="ghost"
             size="icon"
             onClick={handleBack}
-            className="text-white hover:text-gray-300"
+            className="text-white hover:text-gray-300 bg-blue-600"
             aria-label="Back to Group"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          {/* Group Avatar and Info */}
-          <Avatar
-            src={group.avatar || "/api/placeholder/40/40"}
-            alt={group.name}
-            className="w-10 h-10 rounded-full"
-          />
           <div>
-            <h1 className="text-xl font-semibold text-white">{group.name}</h1>
+            <h1 className="text-xl font-semibold">{group.name}</h1>
             <p className="text-sm text-gray-400">{group.members.length} members</p>
           </div>
-        </div>
-        {/* Action Buttons */}
-        <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="icon" className="text-white hover:text-gray-300">
-            <Phone className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="text-white hover:text-gray-300">
-            <Video className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="text-white hover:text-gray-300">
-            <MoreVertical className="h-5 w-5" />
-          </Button>
         </div>
       </header>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-900 custom-scrollbar rounded-lg my-4">
+      <div className="flex-1 overflow-y-auto p-4 bg-gray-900 rounded-lg my-4 custom-scrollbar">
         {messages.length > 0 ? (
           messages.map((message) => (
-            <MessageBubble
-              key={message.id}
-              message={message}
-              currentUser={currentUser}
-              // Customize message bubble with sent/received styles
-            />
+            <MessageBubble key={message.id} message={message} currentUser={currentUser} />
           ))
         ) : (
-          <p className="text-center text-gray-400">
-            No messages yet. Start the conversation!
-          </p>
+          <p className="text-center text-gray-400">No messages yet. Start the conversation!</p>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Bar */}
-      <div className="bg-gray-800 p-4 rounded-lg relative">
-        <div className="flex items-center space-x-2">
-          {/* Emoji Picker Toggle */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-            className="text-white hover:text-gray-300"
-            aria-label="Toggle Emoji Picker"
-          >
-            <Smile className="h-6 w-6" />
-          </Button>
-          {/* Attachment Button */}
-          <Button variant="ghost" size="icon" className="text-white hover:text-gray-300" aria-label="Attach File">
-            <Paperclip className="h-6 w-6" />
-          </Button>
-          {/* Message Input */}
-          <TextInput
-            type="text"
-            placeholder="Type a message..."
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            className="flex-1 bg-gray-700 text-white placeholder-gray-400 rounded-full px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-          {/* Send Button */}
-          <Button
-            onClick={handleSendMessage}
-            className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-2"
-            aria-label="Send Message"
-          >
-            <Send className="h-5 w-5" />
-          </Button>
-        </div>
-        {/* Emoji Picker */}
-        {showEmojiPicker && (
-          <div className="absolute bottom-16 right-4 z-10 bg-gray-900 border border-gray-700 rounded-lg p-2 shadow-lg">
-            <EmojiPicker onEmojiClick={handleEmojiClick} theme="dark" />
-          </div>
-        )}
+      {/* Message Input Area */}
+      <div className="bg-gray-800 p-4 rounded-lg shadow-md flex items-center">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+          className="text-white hover:text-gray-300 bg-blue-600"
+          aria-label="Toggle Emoji Picker"
+        >
+          <Smile className="h-6 w-6" />
+        </Button>
+        <TextInput
+          type="text"
+          placeholder="Type a message..."
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          onKeyPress={handleKeyPress}
+          className="flex-1 text-white placeholder-gray-400 rounded-full px-4 py-2 mx-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+        <Button
+          onClick={handleSendMessage}
+          className="bg-blue-600 text-white rounded-full p-2"
+          aria-label="Send Message"
+        >
+          <Send className="h-5 w-5" />
+        </Button>
       </div>
+      
+      {showEmojiPicker && (
+        <div className="absolute bottom-16 right-4 z-10 bg-gray-900 border border-gray-700 rounded-lg p-2 shadow-lg">
+          <EmojiPicker onEmojiClick={handleEmojiClick} theme="dark" />
+        </div>
+      )}
     </div>
   );
 };

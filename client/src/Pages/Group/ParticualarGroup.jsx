@@ -21,7 +21,7 @@ import {
   FaComments,
 } from "react-icons/fa";
 import EventDrawer from "../../Components/EventDrawer";
-import EventDetailModal from "../../Components/EventDetailDrawer"; // Ensure correct import
+import EventDetailModal from "../../Components/EventDetailDrawer"; 
 import groupIcon from "../../assets/Group.svg";
 
 const GroupDetail = () => {

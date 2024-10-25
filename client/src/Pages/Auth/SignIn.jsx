@@ -51,7 +51,10 @@ const SignIn = () => {
       
 
       if (response.data.success) {
-        dispatch(signinSuccess(response.data.data.user));
+        const { user, token } = response.data.data;
+        console.log(user)
+        console.log(token)
+        dispatch(signinSuccess({ user: response.data.data.user, token: response.data.data.token }));
         setformdata({
           email: "",
           password: "",
@@ -135,7 +138,7 @@ const SignIn = () => {
 
           <div className="flex gap-2 text-sm mt-5 justify-center md:justify-center">
             <span className="text-lg">Don't have an account?</span>
-            <Link to="/" className="text-blue-500 text-lg">
+            <Link to="/signup" className="text-blue-500 text-lg">
               Sign Up
             </Link>
           </div>
