@@ -1,4 +1,3 @@
-// EventDetailModal.js
 import React from 'react';
 import {
   Dialog,
@@ -17,9 +16,16 @@ import {
   Avatar,
   CircularProgress,
   Grid,
+  Tab,
+  Tabs,
+  Paper,
 } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { CalendarToday as CalendarIcon } from '@mui/icons-material';
+import { 
+  CalendarToday as CalendarIcon,
+  AccessTime as TimeIcon,
+  Group as GroupIcon 
+} from '@mui/icons-material';
 import RSVPComponent from './RSVPComponent';
 import '@fontsource/poppins';
 
@@ -27,45 +33,12 @@ const theme = createTheme({
   typography: {
     fontFamily: 'Poppins, sans-serif',
   },
-  palette: {
-    primary: {
-      main: '#3f51b5',
-    },
-    secondary: {
-      main: '#f50057',
-    },
-    success: {
-      main: '#4caf50',
-    },
-    warning: {
-      main: '#ff9800',
-    },
-    error: {
-      main: '#f44336',
-    },
-  },
   components: {
-    MuiTypography: {
-      styleOverrides: {
-        root: {
-          fontFamily: 'Poppins, sans-serif',
-        },
-      },
-    },
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          textTransform: 'none',
-          borderRadius: '8px',
-          padding: '8px 16px',
-        },
-      },
-    },
     MuiDialog: {
       styleOverrides: {
         paper: {
           borderRadius: '16px',
-          padding: '16px',
+          padding: '12px',
         },
       },
     },
@@ -73,24 +46,65 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: '8px',
-          fontSize: '14px',
+          fontWeight: 500,
         },
       },
     },
-    MuiDivider: {
+    MuiTab: {
       styleOverrides: {
         root: {
-          margin: '16px 0',
+          textTransform: 'none',
+          fontWeight: 500,
+          fontSize: '0.95rem',
+          minWidth: 100,
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          fontWeight: 500,
+          borderRadius: '8px',
+          padding: '8px 16px',
         },
       },
     },
     MuiListItem: {
       styleOverrides: {
         root: {
-          paddingLeft: '0',
-          paddingRight: '0',
+          borderRadius: '8px',
+          marginBottom: '8px',
+          '&:hover': {
+            backgroundColor: 'rgba(0, 0, 0, 0.04)',
+          },
         },
       },
+    },
+    MuiAvatar: {
+      styleOverrides: {
+        root: {
+          width: 40,
+          height: 40,
+        },
+      },
+    },
+  },
+  palette: {
+    primary: {
+      main: '#3f51b5',
+    },
+    success: {
+      main: '#4caf50',
+      light: '#e8f5e9',
+    },
+    warning: {
+      main: '#ff9800',
+      light: '#fff3e0',
+    },
+    error: {
+      main: '#f44336',
+      light: '#ffebee',
     },
   },
 });
@@ -106,36 +120,29 @@ const EventDetailModal = ({
   isLeader,
   rsvpLoading,
 }) => {
+  const [tabValue, setTabValue] = React.useState(0);
+
   if (!event) return null;
 
   const handleRSVPChange = (newStatus) => {
     onRSVP(newStatus);
   };
 
-  const getRSVPChipColor = () => {
-    switch (rsvpStatus) {
+  const getRSVPChipProps = (status) => {
+    switch (status) {
       case 'ACCEPTED':
-        return 'success';
+        return { color: 'success', label: 'Attending', sx: { bgcolor: 'success.light' } };
       case 'DECLINED':
-        return 'error';
+        return { color: 'error', label: 'Not Attending', sx: { bgcolor: 'error.light' } };
       case 'TENTATIVE':
-        return 'warning';
+        return { color: 'warning', label: 'Maybe', sx: { bgcolor: 'warning.light' } };
       default:
-        return 'default';
+        return { color: 'default', label: 'No Response', sx: {} };
     }
   };
 
-  const getRSVPChipLabel = () => {
-    switch (rsvpStatus) {
-      case 'ACCEPTED':
-        return 'You have accepted';
-      case 'DECLINED':
-        return 'You have declined';
-      case 'TENTATIVE':
-        return 'You are tentative';
-      default:
-        return 'No Response';
-    }
+  const handleTabChange = (event, newValue) => {
+    setTabValue(newValue);
   };
 
   return (
@@ -146,58 +153,57 @@ const EventDetailModal = ({
         maxWidth="md"
         fullWidth
         aria-labelledby="event-detail-dialog-title"
-        aria-describedby="event-detail-dialog-description"
       >
-        {/* Dialog Title */}
-        <DialogTitle id="event-detail-dialog-title">
-          <Typography variant="h5" component="div" gutterBottom>
+        <DialogTitle>
+          <Typography variant="h5" fontWeight={600} gutterBottom>
             {event.title}
           </Typography>
         </DialogTitle>
 
-        <Divider />
-
-        {/* Dialog Content */}
-        <DialogContent dividers>
-          {/* Event Date */}
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <CalendarIcon color="primary" sx={{ mr: 1 }} />
-            <Typography variant="subtitle1" color="textPrimary">
-              {new Date(event.startTime).toLocaleDateString()} at{' '}
-              {new Date(event.startTime).toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true,
-              })}
-            </Typography>
+        <DialogContent>
+          {/* Event Details Section */}
+          <Box sx={{ mb: 3 }}>
+            <Paper elevation={0} sx={{ p: 3, bgcolor: '#f5f5f5', borderRadius: 2 }}>
+              <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CalendarIcon color="primary" />
+                  <Typography>
+                    {new Date(event.startTime).toLocaleDateString()}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <TimeIcon color="primary" />
+                  <Typography>
+                    {new Date(event.startTime).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: true,
+                    })}
+                  </Typography>
+                </Box>
+              </Box>
+            </Paper>
           </Box>
 
-          {/* Event Description */}
-          <Typography variant="h6" gutterBottom>
-            Details
+          {/* Description */}
+          <Typography variant="h6" gutterBottom sx={{ fontWeight: 500 }}>
+            About
           </Typography>
-          <Typography variant="body1" color="textSecondary" paragraph>
+          <Typography color="text.secondary" paragraph sx={{ mb: 3 }}>
             {event.description || 'No description available.'}
           </Typography>
 
-          <Divider />
+          <Divider sx={{ my: 3 }} />
 
-          {/* Conditional Rendering Based on Leadership */}
+          {/* RSVP Section */}
           {!isLeader ? (
-            // **For Regular Users**
             <Box sx={{ mt: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                RSVP
-              </Typography>
-
-              {/* Current User's RSVP Status */}
-              <Chip
-                label={getRSVPChipLabel()}
-                color={getRSVPChipColor()}
-                sx={{ mb: 2 }}
-              />
-
-              {/* RSVP Component to Change Status */}
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="h6" sx={{ fontWeight: 500 }}>
+                  Your RSVP
+                </Typography>
+                <Chip {...getRSVPChipProps(rsvpStatus)} />
+              </Box>
               <RSVPComponent
                 sessionId={event.id}
                 currentRSVP={rsvpStatus}
@@ -205,122 +211,118 @@ const EventDetailModal = ({
               />
             </Box>
           ) : (
-            // **For Leaders**
-            <Box sx={{ mt: 4 }}>
-              <Typography variant="h6" gutterBottom>
-                RSVP Details
-              </Typography>
+            <Box sx={{ mt: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+                <Typography variant="h6" sx={{ fontWeight: 500 }}>
+                  Responses
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <GroupIcon />
+                  <Typography variant="body2" fontWeight={500}>
+                    {totalAccepted} attending
+                  </Typography>
+                </Box>
+              </Box>
 
-              {/* Loading Indicator */}
               {rsvpLoading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
                   <CircularProgress />
                 </Box>
               ) : (
                 <>
-                  {/* Total Accepted RSVPs */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                    <Chip
-                      label={`Total Accepted: ${totalAccepted}`}
-                      color="success"
-                      sx={{ mr: 2 }}
-                    />
+                  <Tabs 
+                    value={tabValue} 
+                    onChange={handleTabChange}
+                    variant="fullWidth"
+                    sx={{ 
+                      borderBottom: 1, 
+                      borderColor: 'divider',
+                      mb: 3 
+                    }}
+                  >
+                    <Tab label={`Attending (${rsvps.ACCEPTED?.length || 0})`} />
+                    <Tab label={`Maybe (${rsvps.TENTATIVE?.length || 0})`} />
+                    <Tab label={`Not Attending (${rsvps.DECLINED?.length || 0})`} />
+                  </Tabs>
+
+                  {/* Tab Panels */}
+                  <Box role="tabpanel" hidden={tabValue !== 0}>
+                    {tabValue === 0 && (
+                      <List>
+                        {rsvps.ACCEPTED?.map((user) => (
+                          <ListItem key={user.id}>
+                            <ListItemAvatar>
+                              <Avatar src={user.avatar || '/default-avatar.png'} />
+                            </ListItemAvatar>
+                            <ListItemText 
+                              primary={user.username || user.email}
+                            />
+                          </ListItem>
+                        ))}
+                        {(!rsvps.ACCEPTED || rsvps.ACCEPTED.length === 0) && (
+                          <Typography variant="body2" color="text.secondary">
+                            No responses yet
+                          </Typography>
+                        )}
+                      </List>
+                    )}
                   </Box>
 
-                  <Grid container spacing={2}>
-                    {/* Accepted RSVPs */}
-                    <Grid item xs={12} md={4}>
-                      <Typography variant="subtitle1" gutterBottom>
-                        Accepted
-                      </Typography>
-                      {rsvps.ACCEPTED && rsvps.ACCEPTED.length > 0 ? (
-                        <List>
-                          {rsvps.ACCEPTED.map((user) => (
-                            <ListItem key={user.id}>
-                              <ListItemAvatar>
-                                <Avatar
-                                  alt={user.username || user.email}
-                                  src={user.avatar || '/default-avatar.png'}
-                                />
-                              </ListItemAvatar>
-                              <ListItemText
-                                primary={user.username || user.email}
-                              />
-                            </ListItem>
-                          ))}
-                        </List>
-                      ) : (
-                        <Typography variant="body2" color="textSecondary">
-                          No accepted RSVPs.
-                        </Typography>
-                      )}
-                    </Grid>
+                  <Box role="tabpanel" hidden={tabValue !== 1}>
+                    {tabValue === 1 && (
+                      <List>
+                        {rsvps.TENTATIVE?.map((user) => (
+                          <ListItem key={user.id}>
+                            <ListItemAvatar>
+                              <Avatar src={user.avatar || '/default-avatar.png'} />
+                            </ListItemAvatar>
+                            <ListItemText 
+                              primary={user.username || user.email}
+                            />
+                          </ListItem>
+                        ))}
+                        {(!rsvps.TENTATIVE || rsvps.TENTATIVE.length === 0) && (
+                          <Typography variant="body2" color="text.secondary">
+                            No responses yet
+                          </Typography>
+                        )}
+                      </List>
+                    )}
+                  </Box>
 
-                    {/* Declined RSVPs */}
-                    <Grid item xs={12} md={4}>
-                      <Typography variant="subtitle1" gutterBottom>
-                        Declined
-                      </Typography>
-                      {rsvps.DECLINED && rsvps.DECLINED.length > 0 ? (
-                        <List>
-                          {rsvps.DECLINED.map((user) => (
-                            <ListItem key={user.id}>
-                              <ListItemAvatar>
-                                <Avatar
-                                  alt={user.username || user.email}
-                                  src={user.avatar || '/default-avatar.png'}
-                                />
-                              </ListItemAvatar>
-                              <ListItemText
-                                primary={user.username || user.email}
-                              />
-                            </ListItem>
-                          ))}
-                        </List>
-                      ) : (
-                        <Typography variant="body2" color="textSecondary">
-                          No declined RSVPs.
-                        </Typography>
-                      )}
-                    </Grid>
-
-                    {/* Tentative RSVPs */}
-                    <Grid item xs={12} md={4}>
-                      <Typography variant="subtitle1" gutterBottom>
-                        Tentative
-                      </Typography>
-                      {rsvps.TENTATIVE && rsvps.TENTATIVE.length > 0 ? (
-                        <List>
-                          {rsvps.TENTATIVE.map((user) => (
-                            <ListItem key={user.id}>
-                              <ListItemAvatar>
-                                <Avatar
-                                  alt={user.username || user.email}
-                                  src={user.avatar || '/default-avatar.png'}
-                                />
-                              </ListItemAvatar>
-                              <ListItemText
-                                primary={user.username || user.email}
-                              />
-                            </ListItem>
-                          ))}
-                        </List>
-                      ) : (
-                        <Typography variant="body2" color="textSecondary">
-                          No tentative RSVPs.
-                        </Typography>
-                      )}
-                    </Grid>
-                  </Grid>
+                  <Box role="tabpanel" hidden={tabValue !== 2}>
+                    {tabValue === 2 && (
+                      <List>
+                        {rsvps.DECLINED?.map((user) => (
+                          <ListItem key={user.id}>
+                            <ListItemAvatar>
+                              <Avatar src={user.avatar || '/default-avatar.png'} />
+                            </ListItemAvatar>
+                            <ListItemText 
+                              primary={user.username || user.email}
+                            />
+                          </ListItem>
+                        ))}
+                        {(!rsvps.DECLINED || rsvps.DECLINED.length === 0) && (
+                          <Typography variant="body2" color="text.secondary">
+                            No responses yet
+                          </Typography>
+                        )}
+                      </List>
+                    )}
+                  </Box>
                 </>
               )}
             </Box>
           )}
         </DialogContent>
 
-        {/* Dialog Actions */}
-        <DialogActions>
-          <Button onClick={handleClose} color="primary" variant="contained">
+        <DialogActions sx={{ p: 3 }}>
+          <Button 
+            onClick={handleClose} 
+            variant="contained"
+            disableElevation
+          >
             Close
           </Button>
         </DialogActions>

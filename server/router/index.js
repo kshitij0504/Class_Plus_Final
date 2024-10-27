@@ -28,7 +28,7 @@ const {
   getTopSessionsForUser,
 } = require("../Controller/events.controller");
 const prisma = require("../config/connectDb");
-const { sendMessage, getMessage } = require("../Controller/message.controller");
+const { sendMessage, getMessage, deleteMessageForEveryone, deleteMessageForSelf, deleteMultipleMessagesForEveryone, deleteMultipleMessagesForSelf } = require("../Controller/message.controller");
 
 const {
   getAllmeeting,
@@ -99,6 +99,15 @@ router.get("/sessions/rsvp", getUserDetailstoken, getUserSessionsWithRSVP);
 router.post("/:groupId/messages", getUserDetailstoken, sendMessage);
 
 router.get("/:groupId/getmessage", getUserDetailstoken, getMessage);
+
+// Delete a message for everyone (only by the sender within a time limit)
+router.delete("/:messageId/deleteForEveryone", getUserDetailstoken, deleteMessageForEveryone);
+
+// Delete a message for self
+router.delete("/:messageId/deleteForSelf", getUserDetailstoken, deleteMessageForSelf);
+
+// Delete multiple messages for self
+router.delete("/message/deleteMultipleForSelf", getUserDetailstoken, deleteMultipleMessagesForSelf);
 
 router.get(
   "/users/me/top-sessions",

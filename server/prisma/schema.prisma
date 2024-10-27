@@ -104,6 +104,10 @@ model Message {
   createdAt DateTime @default(now())
   userId    Int
   groupId   Int
+  isDeleted Boolean  @default(false)
+  isDeletedForEveryone Boolean   @default(false)
+  deletedFor          Int[]      @default([])
+  deletedAt           DateTime?
   user      User     @relation("UserMessages", fields: [userId], references: [id])
   group     Group    @relation("GroupMessages", fields: [groupId], references: [id],onDelete: Cascade)
 }

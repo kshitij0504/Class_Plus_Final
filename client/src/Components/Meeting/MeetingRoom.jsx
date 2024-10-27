@@ -180,12 +180,13 @@ const WebRTCMeetingRoom = () => {
   };
 
   const initializeSocket = () => {
-    const socket = io("http://localhost:8000", {
+    const socket = io("http://localhost:8000/meeting", {
       auth: { token },
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
     });
+
     socket.on("connect", () => {
       logDebug("Connected to signaling server");
       socket.emit("joinGroup", {
@@ -195,6 +196,7 @@ const WebRTCMeetingRoom = () => {
         userName: currentUser.name,
       });
     });
+    
     socket.on("user-joined", async ({ userId, userName }) => {
       logDebug("New user joined:", userId);
       try {
