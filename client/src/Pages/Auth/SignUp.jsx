@@ -78,7 +78,7 @@ const SignUp = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center px-4 sm:px-6 lg:px-8 font-poppins">
       <motion.div
         className="flex flex-col md:flex-row items-center md:items-start p-6 sm:p-8 max-w-full sm:max-w-xl md:max-w-4xl w-full bg-gray-800 rounded-lg shadow-lg gap-8"
         initial={{ opacity: 0, scale: 0.9 }}

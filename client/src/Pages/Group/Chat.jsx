@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { Button, TextInput, Spinner, Avatar } from "flowbite-react";
+import { TextInput, Spinner, Avatar } from "flowbite-react";
+import { Button } from "@/components/ui/button";
 import {
   Send,
   Smile,
@@ -23,6 +24,9 @@ import { io } from "socket.io-client";
 import EmojiPicker from "emoji-picker-react";
 import axios from "axios";
 import MessageBubble from "../../Components/MessageBubble";
+import { Attachment } from "@mui/icons-material";
+import { FaMicrophone } from "react-icons/fa";
+import { uploadFileToFirebase } from "./Chat/fileUtils";
 
 const ModernChat = () => {
   const { currentUser, token } = useSelector((state) => ({
@@ -37,10 +41,13 @@ const ModernChat = () => {
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [grabPhoto, setGrabPhoto] = useState(false)
   const [typingUsers, setTypingUsers] = useState(new Set());
   const [selectedMessages, setSelectedMessages] = useState(new Set());
   const [selectionMode, setSelectionMode] = useState(false);
+  const [uploadingFile,  setUploadingFile] = useState(false);
   const socketRef = useRef();
+  const fileInputRef = useRef();
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
@@ -73,39 +80,51 @@ const ModernChat = () => {
   }, [id, currentUser]);
 
   useEffect(() => {
+    // Initialize socket connection
     socketRef.current = io("http://localhost:8000/chat", {
       auth: { token: token },
     });
-
+  
+    // Join chat room
     socketRef.current.emit("joinChat", id);
-
-    socketRef.current.on("messageReceived", (newMessage) => {
+  
+    // Setup message listeners
+    const handleNewMessage = (newMessage) => {
       setMessages((prev) => [...prev, newMessage]);
-      // Clear typing indicator when message is received
       setTypingUsers((prev) => {
         const updated = new Set(prev);
         updated.delete(newMessage.userId);
         return updated;
       });
-    });
-
-    socketRef.current.on("userTyping", ({ userId }) => {
+    };
+  
+    const handleUserTyping = ({ userId }) => {
       setTypingUsers((prev) => new Set([...prev, userId]));
-    });
-
-    socketRef.current.on("userStoppedTyping", ({ userId }) => {
+    };
+  
+    const handleUserStoppedTyping = ({ userId }) => {
       setTypingUsers((prev) => {
         const updated = new Set(prev);
         updated.delete(userId);
         return updated;
       });
-    });
-
+    };
+  
+    // Attach listeners
+    socketRef.current.on("messageReceived", handleNewMessage);
+    socketRef.current.on("userTyping", handleUserTyping);
+    socketRef.current.on("userStoppedTyping", handleUserStoppedTyping);
+  
+    // Cleanup on unmount or before re-initializing
     return () => {
       socketRef.current.emit("leaveChat", id);
+      socketRef.current.off("messageReceived", handleNewMessage);
+      socketRef.current.off("userTyping", handleUserTyping);
+      socketRef.current.off("userStoppedTyping", handleUserStoppedTyping);
       socketRef.current.disconnect();
     };
-  }, [id, currentUser]);
+  }, [id, token]);
+  
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -170,12 +189,55 @@ const ModernChat = () => {
     navigate(-1);
   };
 
+  const handleFileSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploadingFile(true);
+     
+      if (file.size > 10 * 1024 * 1024) {
+        alert("File size should be less than 10MB");
+        return;
+      }
+
+      const { fileUrl, fileName, fileType } = await uploadFileToFirebase(file, id);
+
+      socketRef.current.emit("sendMessage", {
+        groupId: id,
+        content: "", 
+        fileUrl,
+        fileName,
+        fileType
+      });
+
+      await axios.post(
+        `http://localhost:8000/api/${id}/messages`,
+        { 
+          content: "",
+          fileUrl,
+          fileName,
+          fileType
+        },
+        { withCredentials: true }
+      );
+
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      alert("Failed to upload file. Please try again.");
+    } finally {
+      setUploadingFile(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
   const renderTypingIndicator = () => {
     console.log(group.members);
     const typingUsersArray = Array.from(typingUsers);
-    if (typingUsersArray.length === 0 || !group) return null; // Added a check for group existence
+    if (typingUsersArray.length === 0 || !group) return null; 
 
-    // Find the typing members in the group by matching userId
     const typingMembers = typingUsersArray
       .map((userId) => group.members.find((member) => member.id === userId))
       .filter((member) => member && member.id !== currentUser.id);
@@ -236,13 +298,11 @@ const ModernChat = () => {
       });
 
       if (response.ok) {
-        // If deletion is successful, remove deleted messages from local state
-        setMessages(prevMessages =>
-          prevMessages.filter(message => !selectedMessages.has(message.id))
+        setMessages((prevMessages) =>
+          prevMessages.filter((message) => !selectedMessages.has(message.id))
         );
       }
 
-      // Clear selection after successful deletion
       setSelectedMessages(new Set());
       setSelectionMode(false);
     } catch (error) {
@@ -296,7 +356,6 @@ const ModernChat = () => {
           </div>
         </div>
 
-        {/* Selection mode toggle */}
         {messages.length > 0 && (
           <div className="flex items-center gap-2">
             {selectionMode ? (
@@ -396,6 +455,7 @@ const ModernChat = () => {
         >
           <Smile className="h-6 w-6" />
         </Button>
+        
         <TextInput
           type="text"
           placeholder="Type a message..."
@@ -404,12 +464,38 @@ const ModernChat = () => {
           onKeyPress={handleKeyPress}
           className="flex-1 text-white placeholder-gray-400 rounded-full px-4 py-2 mx-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
+        
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileSelect}
+          className="hidden"
+          accept="image/*,.pdf,.doc,.docx,.txt"
+        />
+        
         <Button
           onClick={handleSendMessage}
+          disabled={uploadingFile}
           className="bg-blue-600 text-white rounded-full p-2"
           aria-label="Send Message"
         >
           <Send className="h-5 w-5" />
+        </Button>
+        
+        <Button 
+          className="bg-blue-600 text-white rounded-full p-2 ml-2"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploadingFile}
+        >
+          {uploadingFile ? (
+            <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-white" />
+          ) : (
+            <Paperclip className="h-5 w-5" />
+          )}
+        </Button>
+        
+        <Button className="bg-blue-600 text-white rounded-full p-2 ml-2">
+          <FaMicrophone className="h-5 w-5" />
         </Button>
       </div>
 

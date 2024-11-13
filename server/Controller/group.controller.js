@@ -1,4 +1,4 @@
-const prisma = require("../config/connectDb")
+const prisma = require("../config/connectDb");
 const notification = require("../Controller/notification.controller");
 
 function generateJoinCode(length = 6) {
@@ -246,21 +246,26 @@ async function addMemberToGroup(req, res) {
     res.status(500).json({ error: "Failed to add member to group" });
   }
 }
-
-
 async function deleteGroup(req, res) {
   const { id } = req.params;
   const userId = req.user.id;
-  console.log(userId);
+
   if (!Number.isInteger(parseInt(id))) {
     return res.status(400).json({ error: "Invalid group ID" });
   }
 
   try {
     const group = await prisma.group.findUnique({
-      where: { id: parseInt(id) },
+      where: {
+        id: parseInt(id),
+      },
       include: {
         leader: true,
+        announcements: true, // Ensure pluralized correctly
+        meetings: true,
+        messages: true,
+        sessions: true,
+        members: true,
       },
     });
 
@@ -273,13 +278,40 @@ async function deleteGroup(req, res) {
         .status(403)
         .json({ error: "You are not authorized to delete this group" });
     }
-    
-    await prisma.group.delete({
-      where: { id: parseInt(id) },
+
+    // Use a transaction to ensure atomicity
+    await prisma.$transaction(async (prisma) => {
+      // Delete FileAttachments associated with announcements in this group
+      await prisma.fileAttachment.deleteMany({
+        where: {
+          announcement: {
+            groupId: group.id,
+          },
+        },
+      });
+
+      // Delete announcements in this group
+      await prisma.announcement.deleteMany({
+        where: { groupId: group.id },
+      });
+
+      // Delete messages, sessions, and other related records
+      await prisma.message.deleteMany({
+        where: { groupId: group.id },
+      });
+
+      await prisma.session.deleteMany({
+        where: { groupId: group.id },
+      });
+
+      // Finally, delete the group itself
+      await prisma.group.delete({
+        where: { id: parseInt(id) },
+      });
     });
 
     res.status(200).json({
-      message: "Group deleted successfully",
+      message: "Group and related records deleted successfully",
     });
   } catch (error) {
     console.error("Error deleting group:", error);

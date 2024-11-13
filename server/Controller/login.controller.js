@@ -16,7 +16,8 @@ async function checkEmail(req, res) {
         username: true,
         createdAt: true,
         updatedAt: true,
-        avatar: true
+        avatar: true,
+        role: true
       },
     });
 
@@ -36,8 +37,11 @@ async function checkEmail(req, res) {
       });
     }
 
+    
+
     const payload = {
       id: user.id,
+      role: user.role
     };
 
     const token = jwt.sign(payload, process.env.JWT_SECRET_KEY, {

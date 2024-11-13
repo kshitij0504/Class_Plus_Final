@@ -40,13 +40,13 @@ const createMeeting = async (req, res) => {
         groupId: groupIdInt,
         title,
         description,
-        startTime: new Date(scheduledAt), // Changed from scheduledAt to startTime
-        duration: parseInt(duration, 10),  // Added duration field
-        meetingId,                        // Changed from meetingID to meetingId
+        startTime: new Date(scheduledAt), 
+        duration: parseInt(duration, 10), 
+        meetingId,                        
         password: hashedPassword,
-        hostId: userId,                   // Added hostId field
-        participants: {                   // Changed from attendees to participants
-          connect: { id: userId }         // Host is a participant by default
+        hostId: userId,                   
+        participants: {                  
+          connect: { id: userId }         
         },
       },
       include: {
@@ -76,7 +76,7 @@ const createMeeting = async (req, res) => {
 const getAllmeeting = async (req, res) => {
   const userId = req.user.id;
   const groupId = parseInt(req.params.groupId, 10);
-
+  console.log(typeof groupId)
   try {
     const group = await prisma.group.findUnique({
       where: { id: groupId },
@@ -96,7 +96,7 @@ const getAllmeeting = async (req, res) => {
 
     const meetings = await prisma.meeting.findMany({
       where: { groupId },
-      orderBy: { startTime: "asc" },     // Changed from scheduledAt to startTime
+      orderBy: { startTime: "asc" },     
       include: {
         host: true,
         participants: true,
@@ -111,7 +111,7 @@ const getAllmeeting = async (req, res) => {
 };
 
 const joinMeeting = async (req, res) => {
-  const { meetingId, password } = req.query;  // Changed from meetingID to meetingId
+  const { meetingId, password } = req.query; 
   const userId = req.user.id;
 
   if (!meetingId || !password) {

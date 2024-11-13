@@ -71,7 +71,7 @@ const SignIn = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center font-poppins">
       <div className="flex flex-col md:flex-row items-center md:items-start p-8 max-w-4xl w-full bg-gray-800 rounded-lg shadow-lg gap-8">
         <div className="flex-1 flex flex-col items-center">
         <div className="relative w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96">
@@ -140,6 +140,9 @@ const SignIn = () => {
             <span className="text-lg">Don't have an account?</span>
             <Link to="/signup" className="text-blue-500 text-lg">
               Sign Up
+            </Link>
+            <Link to="/forgot-password" className="text-blue-500 text-lg">
+              ForgetPassword?
             </Link>
           </div>
         </div>

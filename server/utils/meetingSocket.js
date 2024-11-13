@@ -1,4 +1,6 @@
 // meetingSocket.js
+const jwt = require("jsonwebtoken");
+
 const handleMeetingSocket = (io) => {
   const rooms = new Map();
   const userStreams = new Map();

@@ -5,6 +5,7 @@ import { HiOutlineClipboardCopy, HiCheck } from "react-icons/hi";
 import { FaRegCopy } from "react-icons/fa";
 import { useParams } from "react-router-dom";
 import axios from "axios";
+import MainLayout from "./MainLayout";
 
 const Settings = () => {
   const [teamCode, setTeamCode] = useState("");

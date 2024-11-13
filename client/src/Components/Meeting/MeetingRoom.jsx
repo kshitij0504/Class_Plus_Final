@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Camera,
   Mic,
@@ -33,7 +33,7 @@ import { useSelector } from "react-redux";
 
 const WebRTCMeetingRoom = () => {
   const [localStream, setLocalStream] = useState(null);
-  const [peers, setPeers] = useState(new Map());
+  const [peers, setPeers] = useState(() => new Map());
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -63,122 +63,222 @@ const WebRTCMeetingRoom = () => {
     currentUser: state.user.currentUser,
     token: state.user.token,
   }));
+  const remoteStreams = useRef(new Map());
 
   const logDebug = (message, data = null) => {
     const timestamp = new Date().toISOString();
     console.log(`[${timestamp}] ${message}`, data || "");
     setConnectionStatus(`${message} ${data ? JSON.stringify(data) : ""}`);
   };
-  const renegotiate = async (peerId) => {
-    try {
-      logDebug(`Starting renegotiation with peer: ${peerId}`);
-      const pc = peerConnections.current.get(peerId);
-      if (!pc) {
-        logDebug(`No peer connection found for: ${peerId}`);
-        return;
-      }
 
-      const offer = await pc.createOffer({
-        offerToReceiveAudio: true,
-        offerToReceiveVideo: true,
-        iceRestart: true, // Force new ICE candidates
+  const updatePeerState = useCallback((peerId, updates) => {
+    setPeers((prevPeers) => {
+      const newPeers = new Map(prevPeers);
+      const existingPeer = newPeers.get(peerId) || {};
+      
+      // Ensure stream reference is maintained
+      const stream = updates.stream || existingPeer.stream;
+      
+      newPeers.set(peerId, {
+        ...existingPeer,
+        ...updates,
+        id: peerId,
+        stream: stream,
+        // Track media states
+        hasVideo: stream?.getVideoTracks().some(track => track.enabled) ?? false,
+        hasAudio: stream?.getAudioTracks().some(track => track.enabled) ?? false,
       });
-      await pc.setLocalDescription(offer);
-      socketRef.current.emit("renegotiation-offer", {
-        target: peerId,
-        offer: offer,
-      });
-    } catch (error) {
-      logDebug(`Renegotiation error: ${error.message}`);
-    }
-  };
+      
+      return newPeers;
+    });
+  }, []);
 
+  // Enhanced peer connection creation
+  // Modified createPeerConnection function
   const createPeerConnection = async (peerId, isInitiator = false) => {
     try {
-      logDebug(
-        `Creating peer connection for: ${peerId}, isInitiator: ${isInitiator}`
-      );
+      logDebug(`Creating peer connection for: ${peerId}, isInitiator: ${isInitiator}`);
+      
       const configuration = {
         iceServers: [
+          { urls: "stun:stun.l.google.com:19302" },
+          { urls: "stun:stun1.l.google.com:19302" },
           {
-            urls: [
-              "stun:stun.l.google.com:19302",
-              "stun:stun1.l.google.com:19302",
-            ],
-          },
+            urls: 'turn:numb.viagenie.ca',
+            username: 'webrtc@live.com',
+            credential: 'muazkh'
+          }
         ],
-        iceTransportPolicy: "all",
         iceCandidatePoolSize: 10,
       };
-      const peerConnection = new RTCPeerConnection(configuration);
-      // Store peer connection
-      peerConnections.current.set(peerId, peerConnection);
-      // Add local tracks to peer connection
+
+      const pc = new RTCPeerConnection(configuration);
+      peerConnections.current.set(peerId, pc);
+
+      // Add local tracks if available
       if (localStream) {
         localStream.getTracks().forEach((track) => {
-          const sender = peerConnection.addTrack(track, localStream);
-          logDebug(`Added local ${track.kind} track to peer ${peerId}`);
+          pc.addTrack(track, localStream);
+          logDebug(`Added local track to peer ${peerId}:`, track.kind);
         });
       }
-      // Handle ICE candidates
-      peerConnection.onicecandidate = (event) => {
+
+      // Enhanced remote track handling
+      pc.ontrack = (event) => {
+        logDebug(`Received track from peer ${peerId}:`, {
+          kind: event.track.kind,
+          trackId: event.track.id,
+        });
+
+        let remoteStream = remoteStreams.current.get(peerId);
+        if (!remoteStream) {
+          remoteStream = new MediaStream();
+          remoteStreams.current.set(peerId, remoteStream);
+        }
+
+        // Check if track already exists
+        const existingTrack = remoteStream.getTracks().find(t => t.kind === event.track.kind);
+        if (existingTrack) {
+          remoteStream.removeTrack(existingTrack);
+        }
+
+        remoteStream.addTrack(event.track);
+        
+        // Immediately update peer state with new stream
+        updatePeerState(peerId, {
+          stream: remoteStream,
+          hasVideo: remoteStream.getVideoTracks().length > 0,
+          hasAudio: remoteStream.getAudioTracks().length > 0,
+        });
+
+        // Monitor track ended event
+        event.track.onended = () => {
+          logDebug(`Track ended for peer ${peerId}:`, event.track.kind);
+          updatePeerState(peerId, {
+            hasVideo: remoteStream.getVideoTracks().some(t => !t.ended),
+            hasAudio: remoteStream.getAudioTracks().some(t => !t.ended),
+          });
+        };
+      };
+
+      // Enhanced ICE candidate handling
+      pc.onicecandidate = (event) => {
         if (event.candidate) {
-          logDebug(`Sending ICE candidate to: ${peerId}`);
-          socketRef.current.emit("ice-candidate", {
+          socketRef.current?.emit("ice-candidate", {
             target: peerId,
             candidate: event.candidate,
             from: currentUser.id,
           });
         }
       };
-      // Handle connection state changes
-      peerConnection.oniceconnectionstatechange = () => {
-        logDebug(
-          `ICE Connection State (${peerId}):`,
-          peerConnection.iceConnectionState
-        );
-        if (peerConnection.iceConnectionState === "failed") {
-          renegotiate(peerId);
-        }
-      };
-      // Handle incoming tracks
-      peerConnection.ontrack = (event) => {
-        logDebug(`Received track from peer ${peerId}:`, event.track.kind);
-        const [remoteStream] = event.streams;
-        if (!remoteStream) {
-          logDebug(`No stream received from peer ${peerId}`);
-          return;
-        }
-        // Update peers state with new stream
-        setPeers((prevPeers) => {
-          const newPeers = new Map(prevPeers);
-          newPeers.set(peerId, {
-            id: peerId,
-            stream: remoteStream,
-            name: `Participant ${peerId}`,
-            isVideoOff: false,
-            isMuted: false,
-          });
-          return newPeers;
+
+      // Connection state monitoring
+      pc.onconnectionstatechange = () => {
+        logDebug(`Peer ${peerId} connection state:`, pc.connectionState);
+        
+        updatePeerState(peerId, {
+          connectionState: pc.connectionState,
         });
-        // Ensure stream is properly attached to video element
-        const videoElement = document.getElementById(`remote-video-${peerId}`);
-        if (videoElement && videoElement instanceof HTMLVideoElement) {
-          videoElement.srcObject = remoteStream;
-          videoElement
-            .play()
-            .catch((err) =>
-              logDebug(`Error playing remote video: ${err.message}`)
-            );
+
+        if (pc.connectionState === 'failed') {
+          // Attempt to restart ICE
+          pc.restartIce();
+        }
+
+        if (['disconnected', 'failed', 'closed'].includes(pc.connectionState)) {
+          remoteStreams.current.delete(peerId);
+          updatePeerState(peerId, { stream: null });
         }
       };
-      return peerConnection;
+
+      // ICE connection state monitoring
+      pc.oniceconnectionstatechange = () => {
+        logDebug(`ICE connection state for peer ${peerId}:`, pc.iceConnectionState);
+        
+        if (pc.iceConnectionState === 'failed') {
+          // Attempt to restart ICE
+          pc.restartIce();
+        }
+      };
+
+      // Negotiation needed handler with retry logic
+      pc.onnegotiationneeded = async () => {
+        if (isInitiator) {
+          try {
+            const offer = await createOffer(pc, peerId);
+            socketRef.current?.emit("offer", {
+              target: peerId,
+              offer: offer,
+              from: currentUser.id,
+            });
+          } catch (error) {
+            logDebug(`Negotiation error for peer ${peerId}:`, error);
+            // Retry negotiation after a delay
+            setTimeout(() => pc.onnegotiationneeded(), 2000);
+          }
+        }
+      };
+
+      return pc;
     } catch (error) {
       logDebug(`Error creating peer connection: ${error.message}`);
       throw error;
     }
   };
 
+  // Enhanced offer creation with specific constraints
+  const createOffer = async (pc, peerId) => {
+    try {
+      const offerOptions = {
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true,
+        voiceActivityDetection: true,
+        iceRestart: true,
+      };
+
+      // Only add transceivers if they don't exist and we have a local stream
+      if (!pc.getTransceivers().length) {
+        if (localStream) {
+          // Add video transceiver with simulcast
+          const videoTrack = localStream.getVideoTracks()[0];
+          if (videoTrack) {
+            pc.addTransceiver(videoTrack, {
+              direction: "sendrecv",
+              sendEncodings: [
+                { maxBitrate: 900000, scaleResolutionDownBy: 1 },
+                { maxBitrate: 600000, scaleResolutionDownBy: 2 },
+                { maxBitrate: 300000, scaleResolutionDownBy: 4 }
+              ]
+            });
+          } else {
+            pc.addTransceiver("video", { direction: "sendrecv" });
+          }
+
+          // Add audio transceiver
+          const audioTrack = localStream.getAudioTracks()[0];
+          if (audioTrack) {
+            pc.addTransceiver(audioTrack, { direction: "sendrecv" });
+          } else {
+            pc.addTransceiver("audio", { direction: "sendrecv" });
+          }
+        } else {
+          // If no local stream, just create transceivers without tracks
+          pc.addTransceiver("video", { direction: "sendrecv" });
+          pc.addTransceiver("audio", { direction: "sendrecv" });
+        }
+      }
+
+      const offer = await pc.createOffer(offerOptions);
+      await pc.setLocalDescription(offer);
+      return offer;
+    } catch (error) {
+      logDebug(`Error creating offer for peer ${peerId}:`, error);
+      throw error;
+    }
+  };
+
+
+  // Enhanced socket initialization with reconnection handling
   const initializeSocket = () => {
     const socket = io("http://localhost:8000/meeting", {
       auth: { token },
@@ -196,13 +296,19 @@ const WebRTCMeetingRoom = () => {
         userName: currentUser.name,
       });
     });
-    
+
     socket.on("user-joined", async ({ userId, userName }) => {
-      logDebug("New user joined:", userId);
       try {
+        logDebug(`User joined: ${userName} (${userId})`);
         const pc = await createPeerConnection(userId, true);
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
+        
+        updatePeerState(userId, {
+          name: userName,
+          isVideoOff: false,
+          isMuted: false,
+        });
+
+        const offer = await createOffer(pc, userId);
         socket.emit("offer", {
           target: userId,
           offer: offer,
@@ -212,8 +318,8 @@ const WebRTCMeetingRoom = () => {
         logDebug(`Error handling user joined: ${error.message}`);
       }
     });
+
     socket.on("offer", async ({ from, offer }) => {
-      logDebug("Received offer from:", from);
       try {
         let pc = peerConnections.current.get(from);
         if (!pc) {
@@ -231,8 +337,8 @@ const WebRTCMeetingRoom = () => {
         logDebug(`Error handling offer: ${error.message}`);
       }
     });
+
     socket.on("answer", async ({ from, answer }) => {
-      logDebug("Received answer from:", from);
       try {
         const pc = peerConnections.current.get(from);
         if (pc) {
@@ -242,6 +348,7 @@ const WebRTCMeetingRoom = () => {
         logDebug(`Error handling answer: ${error.message}`);
       }
     });
+
     socket.on("ice-candidate", async ({ from, candidate }) => {
       try {
         const pc = peerConnections.current.get(from);
@@ -252,11 +359,109 @@ const WebRTCMeetingRoom = () => {
         logDebug(`Error handling ICE candidate: ${error.message}`);
       }
     });
+
     socket.on("user-left", ({ userId }) => {
-      removePeer(userId);
+      logDebug(`User left: ${userId}`);
+      cleanupPeerConnection(userId);
     });
+
+    socket.on("disconnect", () => {
+      logDebug("Disconnected from signaling server");
+    });
+
     socketRef.current = socket;
   };
+
+  // Enhanced media device initialization
+  const initializeMediaDevices = async () => {
+    try {
+      await enumarateDevices();
+      const constraints = {
+        video: {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          facingMode: "user",
+          frameRate: { ideal: 30, max: 60 }
+        },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      };
+
+      logDebug("Getting user media with constraints:", constraints);
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      setLocalStream(stream);
+      setHasMediaPermissions(true);
+
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+        localVideoRef.current.muted = true;
+        await localVideoRef.current.play()
+          .catch((e) => logDebug("Play error:", e));
+      }
+
+      return stream;
+    } catch (err) {
+      logDebug("Media initialization error:", err.message);
+      setHasMediaPermissions(false);
+      setConnectionError(`Failed to access media devices: ${err.message}`);
+      throw err;
+    }
+  };
+
+  // Clean up function for peer connections
+  const cleanupPeerConnection = (peerId) => {
+    const pc = peerConnections.current.get(peerId);
+    if (pc) {
+      pc.close();
+      peerConnections.current.delete(peerId);
+    }
+    remoteStreams.current.delete(peerId);
+    setPeers((prevPeers) => {
+      const newPeers = new Map(prevPeers);
+      newPeers.delete(peerId);
+      return newPeers;
+    });
+  };
+
+  // Enhanced cleanup for meeting end
+  const cleanupMeeting = useCallback(() => {
+    if (localStream) {
+      localStream.getTracks().forEach(track => track.stop());
+      setLocalStream(null);
+    }
+
+    peerConnections.current.forEach((pc, peerId) => {
+      cleanupPeerConnection(peerId);
+    });
+
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+    }
+
+    setPeers(new Map());
+    setConnectionError(null);
+  }, [localStream]);
+
+  // Initialize meeting
+  useEffect(() => {
+    const startMeeting = async () => {
+      try {
+        const stream = await initializeMediaDevices();
+        if (stream) {
+          setLocalStream(stream);
+          initializeSocket();
+        }
+      } catch (err) {
+        setConnectionError(`Failed to start meeting: ${err.message}`);
+      }
+    };
+
+    startMeeting();
+    return cleanupMeeting;
+  }, []);
 
   const enumarateDevices = async () => {
     try {
@@ -341,123 +546,6 @@ const WebRTCMeetingRoom = () => {
     } catch (error) {
       logDebug(`Error switching ${kind}:`, error);
     }
-  };
-
-  const initializeMediaDevices = async () => {
-    try {
-      await enumarateDevices();
-      const constraints = {
-        video: {
-          deviceId: selectedDevices.videoInput
-            ? { exact: selectedDevices.videoInput }
-            : undefined,
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          facingMode: "user",
-        },
-        audio: {
-          deviceId: selectedDevices.audioInput
-            ? { exact: selectedDevices.audioInput }
-            : undefined,
-          echoCancellation: true,
-          noiseSuppression: true,
-        },
-      };
-
-      logDebug("Getting user media with constraints:", constraints);
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      // Verify tracks are working
-      const videoTrack = stream.getVideoTracks()[0];
-      const audioTrack = stream.getAudioTracks()[0];
-      logDebug("Video track status:", {
-        exists: !!videoTrack,
-        enabled: videoTrack?.enabled,
-        readyState: videoTrack?.readyState,
-        settings: videoTrack?.getSettings(),
-      });
-      logDebug("Audio track status:", {
-        exists: !!audioTrack,
-        enabled: audioTrack?.enabled,
-        readyState: audioTrack?.readyState,
-      });
-
-      setLocalStream(stream);
-      setHasMediaPermissions(true);
-
-      if (localVideoRef.current) {
-        try {
-          localVideoRef.current.srcObject = stream;
-          localVideoRef.current.muted = true;
-          const playVideo = async () => {
-            try {
-              await localVideoRef.current.play();
-              logDebug("Local video playing successfully");
-            } catch (playError) {
-              logDebug("Error playing local video:", playError);
-              setTimeout(playVideo, 1000);
-            }
-          };
-          await playVideo();
-        } catch (videoError) {
-          logDebug("Error setting up local video:", videoError);
-        }
-      } else {
-        logDebug("Local video element reference not found");
-      }
-
-      return stream;
-    } catch (err) {
-      logDebug("Media initialization error:", err.message);
-      setHasMediaPermissions(false);
-      setConnectionError(`Failed to access media devices: ${err.message}`);
-      throw err;
-    }
-  };
-
-  useEffect(() => {
-    const startMeeting = async () => {
-      try {
-        const stream = await initializeMediaDevices();
-        setLocalStream(stream);
-        initializeSocket();
-      } catch (err) {
-        setConnectionError(`Failed to start meeting: ${err.message}`);
-      }
-    };
-
-    startMeeting();
-
-    return () => cleanup();
-  }, []);
-
-  const cleanup = () => {
-    if (localStream) {
-      localStream.getTracks().forEach((track) => track.stop());
-    }
-    peerConnections.current.forEach((pc) => pc.close());
-    peerConnections.current.clear();
-    if (socketRef.current) {
-      socketRef.current.disconnect();
-    }
-  };
-
-  const removePeer = (peerId) => {
-    const pc = peerConnections.current.get(peerId);
-    if (pc) {
-      pc.close();
-      peerConnections.current.delete(peerId);
-    }
-
-    const videoContainer = document.getElementById(`video-container-${peerId}`);
-    if (videoContainer) {
-      videoContainer.remove();
-    }
-
-    setPeers((prevPeers) => {
-      const newPeers = new Map(prevPeers);
-      newPeers.delete(peerId);
-      return newPeers;
-    });
   };
 
   const requestMediaPermissions = async () => {
@@ -662,6 +750,7 @@ const WebRTCMeetingRoom = () => {
           peers={peers}
           isMuted={isMuted}
           isVideoOff={isVideoOff}
+          localVideoRef={localVideoRef}
         />
       </div>
       <ControlsBar />

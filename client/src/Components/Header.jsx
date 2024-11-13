@@ -26,7 +26,7 @@ export default function Header() {
     <Navbar
       fluid
       rounded
-      className="bg-gray-900 px-4 py-2 shadow-md md:px-8 lg:px-16"
+      className="bg-gray-900 px-4 py-2 shadow-md md:px-8 lg:px-16 mt-5"
     >
       <Navbar.Brand href="/">
         <img

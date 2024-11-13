@@ -5,7 +5,8 @@ const updateUser = async (req, res) => {
 
   const userId = Number(req.user.id);
   const paramUserId = Number(req.params.userId);
-
+  console.log(paramUserId)
+  
   if (userId !== paramUserId) {
     return res
       .status(403)

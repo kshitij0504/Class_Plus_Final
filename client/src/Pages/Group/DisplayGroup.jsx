@@ -177,7 +177,7 @@ const DisplayGroup = () => {
 
   return (
     <>
-       <div className="min-h-screen bg-gray-900">
+       <div className="min-h-screen bg-gray-900 font-poppins">
       <Navbar className="bg-gray-800 border-b text-3xl h-20 border-gray-700">
         <div className="container mx-auto flex justify-between items-center mt-3">
           <Navbar.Brand as={Link} to="/">
@@ -260,7 +260,7 @@ const DisplayGroup = () => {
               {memberGroups.map((group) => (
                 <Card
                   key={group.id}
-                  className={`${groupGradients[group.id]} hover:shadow-lg transition-shadow duration-300`}
+                  className={`${groupGradients[group.id]} hover:shadow-lg transition-shadow duration-300 border-none`}
                 >
                   <Link to={`/groups/${group.id}`} className="h-full">
                     <h5 className="text-2xl font-bold tracking-tight text-white">

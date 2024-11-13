@@ -6,7 +6,7 @@ const DELETED_MESSAGE_PLACEHOLDER = "This message was deleted";
 
 async function sendMessage(req, res) {
   const { groupId } = req.params;
-  const { content } = req.body;
+  const { content,fileUrl, fileName, fileType } = req.body;
   const userId = req.user.id;
 
   if (!content || typeof content !== "string" || content.trim() === "") {
@@ -33,6 +33,9 @@ async function sendMessage(req, res) {
         content: content.trim(),
         userId,
         groupId: group.id,
+        fileUrl,
+        fileName,
+        fileType,
         deletedFor: [], // Array to track users who deleted the message for themselves
         isDeletedForEveryone: false,
       },

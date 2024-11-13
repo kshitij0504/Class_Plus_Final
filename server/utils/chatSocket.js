@@ -21,6 +21,7 @@ const handleChatSocket = (io, prisma) => {
 
     try {
       const decoded = verifyToken(token);
+      console.log(decoded)
       if (!decoded || !decoded.id) {
         throw new Error("Invalid token");
       }
@@ -59,13 +60,16 @@ const handleChatSocket = (io, prisma) => {
 
     socket.on("sendMessage", async (data) => {
       try {
-        const { groupId, content } = data;
+        const { groupId, content, fileUrl, fileName, fileType } = data;
         const groupIdInt = parseInt(groupId);
         const savedMessage = await prisma.message.create({
           data: {
             content: content,
             userId: socket.userId,
             groupId: groupIdInt,
+            fileUrl: fileUrl || null,
+            fileName: fileName || null,
+            fileType: fileType || null,
           },
           include: {
             user: {
@@ -83,6 +87,9 @@ const handleChatSocket = (io, prisma) => {
           content: savedMessage.content,
           userId: savedMessage.userId,
           createdAt: savedMessage.createdAt,
+          fileUrl: savedMessage.fileUrl,
+          fileName: savedMessage.fileName,
+          fileType: savedMessage.fileType,
           user: {
             id: savedMessage.user.id,
             username: savedMessage.user.username,

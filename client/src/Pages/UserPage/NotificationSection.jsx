@@ -11,6 +11,21 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
+// PopupNotification Component
+const PopupNotification = ({ message, onClose }) => (
+  <div className="fixed inset-0 flex items-center justify-center z-50">
+    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg max-w-md w-full mx-4">
+      <p className="text-center font-semibold">{message}</p>
+      <button
+        onClick={onClose}
+        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+      >
+        Dismiss
+      </button>
+    </div>
+  </div>
+);
+
 const NotificationItem = ({ message, createdAt, read, type }) => {
   const date = new Date(createdAt);
 
@@ -63,6 +78,7 @@ const NotificationSection = () => {
   const [groupNotifications, setGroupNotifications] = useState([]);
   const [activeTab, setActiveTab] = useState("user");
   const [unreadCount, setUnreadCount] = useState({ user: 0, group: 0 });
+  const [popupNotification, setPopupNotification] = useState(null);
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -100,7 +116,7 @@ const NotificationSection = () => {
   useEffect(() => {
     if (!currentUser?.id) return;
 
-    const socket = io("http://localhost:8000",{
+    const socket = io("http://localhost:8000", {
       auth: { token: token },
     });
 
@@ -116,6 +132,10 @@ const NotificationSection = () => {
         setUserNotifications(prev => [notification, ...prev]);
         setUnreadCount(prev => ({ ...prev, user: prev.user + 1 }));
       }
+
+      // Show popup notification
+      setPopupNotification(notification.message);
+      setTimeout(() => setPopupNotification(null), 5000); // Hide after 5 seconds
     });
 
     socket.on("connect_error", (err) => console.error("Socket connection error:", err));
@@ -135,6 +155,13 @@ const NotificationSection = () => {
 
   return (
     <div className="min-h-screen bg-gray-800 dark:bg-gray-900">
+      {popupNotification && (
+        <PopupNotification 
+          message={popupNotification}
+          onClose={() => setPopupNotification(null)}
+        />
+      )}
+
       <div className="sticky top-0 z-10 bg-gray-800 dark:bg-gray-950 border-b">
         <div className="container flex h-16 items-center px-4 md:px-6 lg:px-8">
           <BellIcon className="mr-2 h-6 w-6" />

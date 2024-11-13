@@ -20,9 +20,10 @@ const io = socketIo(server, {
   pingInterval: 25000,
   transports: ["websocket", "polling"],
 });
-
+const adminRouter = require("./router/adminroute");
 const handleChatSocket = require("./utils/chatSocket");
 const handleMeetingSocket = require("./utils/meetingSocket");
+const handleOnetoOneChatSocket = require("./utils/onetoonechatsocket");
 
 // Middleware setup
 app.use(cookieParser());
@@ -34,12 +35,12 @@ app.use((req, res, next) => {
   next();
 });
 
-
-
 handleChatSocket(io, prisma);
 handleMeetingSocket(io);
+handleOnetoOneChatSocket(io)
 
 app.use("/api", router);
+app.use("/admin", adminRouter);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -50,7 +51,5 @@ const PORT = process.env.PORT || 8000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
-
 
 module.exports = { io, app };

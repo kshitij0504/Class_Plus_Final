@@ -23,11 +23,26 @@ model User {
   groupsLed         Group[]             @relation("GroupLeaders")
   meetingsHosted    Meeting[]           @relation("MeetingHost")
   meetings          Meeting[]           @relation("MeetingParticipants")
+  role              String              @default("USER")
+  passwordReset     PasswordReset[]
+  note              Note[]
   verifications     UserVerification[]
   Notification      Notification[]
   GroupNotification GroupNotification[]
   sessions          Session[]
   RSVPs             RSVP[]
+  announcement      Announcement[]
+  comments          Comment[]
+  commentNOTES      CommentNOTES[]
+  reaction          Reaction[]
+  Mention           Mention[]
+  Folder            Folder[]
+  File              File[]
+  friendsUser1      Friendship[]        @relation("FriendshipUser1")
+  friendsUser2      Friendship[]        @relation("FriendshipUser2")
+  chatRoomsUser1    ChatRoom[]          @relation("ChatRoomUser1")
+  chatRoomsUser2    ChatRoom[]          @relation("ChatRoomUser2")
+  MessageOneToOne   MessageOneToOne[]
 }
 
 model UserVerification {
@@ -38,19 +53,22 @@ model UserVerification {
 }
 
 model Group {
-  id          Int       @id @default(autoincrement())
-  name        String
-  description String?
-  leaderId    Int
-  leader      User      @relation("GroupLeaders", fields: [leaderId], references: [id])
-  members     User[]    @relation("GroupMembers")
-  joinCode    String    @unique
-  createdAt   DateTime  @default(now())
-  messages    Message[] @relation("GroupMessages")
-  sessions    Session[]
-  meetings    Meeting[]
-
-  Meeting Meeting[] @relation("MeetingGroup")
+  id            Int            @id @default(autoincrement())
+  name          String
+  description   String?
+  leaderId      Int
+  leader        User           @relation("GroupLeaders", fields: [leaderId], references: [id])
+  members       User[]         @relation("GroupMembers")
+  joinCode      String         @unique
+  createdAt     DateTime       @default(now())
+  messages      Message[]      @relation("GroupMessages")
+  folders       Folder[]
+  files         File[]
+  note          Note[]
+  sessions      Session[]
+  meetings      Meeting[]
+  Meeting       Meeting[]      @relation("MeetingGroup")
+  announcements Announcement[]
 }
 
 model Notification {
@@ -99,17 +117,22 @@ model RSVP {
 }
 
 model Message {
-  id        Int      @id @default(autoincrement())
-  content   String
-  createdAt DateTime @default(now())
-  userId    Int
-  groupId   Int
-  isDeleted Boolean  @default(false)
+  id                   Int       @id @default(autoincrement())
+  content              String
+  fileUrl              String? // Firebase URL for the file
+  fileName             String? // Original name of the file
+  fileType             String?
+  createdAt            DateTime  @default(now())
+  userId               Int
+  groupId              Int
+  isDeleted            Boolean   @default(false)
   isDeletedForEveryone Boolean   @default(false)
-  deletedFor          Int[]      @default([])
-  deletedAt           DateTime?
-  user      User     @relation("UserMessages", fields: [userId], references: [id])
-  group     Group    @relation("GroupMessages", fields: [groupId], references: [id],onDelete: Cascade)
+  deletedFor           Int[]     @default([])
+  deletedAt            DateTime?
+  user                 User      @relation("UserMessages", fields: [userId], references: [id])
+  group                Group     @relation("GroupMessages", fields: [groupId], references: [id], onDelete: Cascade)
+  ChatRoom             ChatRoom? @relation(fields: [chatRoomId], references: [id])
+  chatRoomId           Int?
 }
 
 enum RSVPStatus {
@@ -126,11 +149,181 @@ model Meeting {
   meetingId    String   @unique // Unique meeting ID for joining
   password     String // Meeting password
   description  String?
-  group        Group    @relation("MeetingGroup", fields: [groupId], references: [id])
+  group        Group    @relation("MeetingGroup", fields: [groupId], references: [id], onDelete: Cascade)
   groupId      Int
   host         User     @relation("MeetingHost", fields: [hostId], references: [id])
   hostId       Int
   participants User[]   @relation("MeetingParticipants")
   createdAt    DateTime @default(now())
   Group        Group[]
+}
+
+model Announcement {
+  id          Int              @id @default(autoincrement())
+  title       String
+  content     String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  pinned      Boolean          @default(false)
+  important   Boolean          @default(false)
+  createdBy   Int
+  groupId     Int
+  group       Group            @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user        User             @relation(fields: [createdBy], references: [id])
+  attachments FileAttachment[]
+  comments    Comment[]
+  reactions   Reaction[]
+  mentions    Mention[]
+}
+
+model FileAttachment {
+  id             Int          @id @default(autoincrement())
+  fileUrl        String
+  fileName       String
+  uploadedBy     Int
+  announcementId Int
+  announcement   Announcement @relation(fields: [announcementId], references: [id])
+}
+
+model Comment {
+  id             Int          @id @default(autoincrement())
+  content        String
+  createdAt      DateTime     @default(now())
+  createdBy      Int
+  announcementId Int
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [createdBy], references: [id])
+}
+
+model Reaction {
+  id             Int          @id @default(autoincrement())
+  type           String
+  userId         Int
+  announcementId Int
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id])
+}
+
+model Mention {
+  id              Int          @id @default(autoincrement())
+  mentionedUserId Int
+  announcementId  Int
+  announcement    Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  user            User         @relation(fields: [mentionedUserId], references: [id])
+}
+
+model Note {
+  id        Int            @id @default(autoincrement())
+  title     String
+  content   String
+  author    User           @relation(fields: [authorId], references: [id])
+  authorId  Int
+  group     Group?         @relation(fields: [groupId], references: [id])
+  groupId   Int?
+  isPublic  Boolean        @default(false)
+  version   Int            @default(1)
+  comment   CommentNOTES[]
+  history   NoteHistory[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+}
+
+model NoteHistory {
+  id        Int      @id @default(autoincrement())
+  note      Note     @relation(fields: [noteId], references: [id])
+  noteId    Int
+  content   String
+  version   Int
+  createdAt DateTime @default(now())
+}
+
+model CommentNOTES {
+  id        Int      @id @default(autoincrement())
+  content   String
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  Int
+  note      Note     @relation(fields: [noteId], references: [id])
+  noteId    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Folder {
+  id         Int      @id @default(autoincrement())
+  name       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  // Folder hierarchy
+  parentId   Int?
+  parent     Folder?  @relation("FolderHierarchy", fields: [parentId], references: [id])
+  subFolders Folder[] @relation("FolderHierarchy")
+  // Group relationship
+  groupId    Int
+  group      Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  // Created by
+  createdBy  Int
+  creator    User     @relation(fields: [createdBy], references: [id])
+  // Files in this folder
+  files      File[]
+}
+
+model File {
+  id        Int       @id @default(autoincrement())
+  name      String
+  fileUrl   String
+  fileType  String
+  size      Int
+  folderId  Int?
+  folder    Folder?   @relation(fields: [folderId], references: [id])
+  groupId   Int
+  group     Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdBy Int
+  creator   User      @relation(fields: [createdBy], references: [id])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+}
+
+model Friendship {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  user1     User     @relation("FriendshipUser1", fields: [user1Id], references: [id])
+  user1Id   Int
+  user2     User     @relation("FriendshipUser2", fields: [user2Id], references: [id])
+  user2Id   Int
+
+  @@unique([user1Id, user2Id])
+}
+
+model ChatRoom {
+  id              Int               @id @default(autoincrement())
+  user1           User              @relation("ChatRoomUser1", fields: [user1Id], references: [id])
+  user1Id         Int
+  user2           User              @relation("ChatRoomUser2", fields: [user2Id], references: [id])
+  user2Id         Int
+  messages        Message[]
+  MessageOneToOne MessageOneToOne[]
+
+  @@unique([user1Id, user2Id]) // Unique chat room per user pair
+}
+
+model MessageOneToOne {
+  id         Int      @id @default(autoincrement())
+  chatRoom   ChatRoom @relation(fields: [chatRoomId], references: [id])
+  chatRoomId Int
+  sender     User     @relation(fields: [senderId], references: [id])
+  senderId   Int
+  content    String
+  sentAt     DateTime @default(now())
+}
+
+model PasswordReset {
+  id         Int      @id @default(autoincrement())
+  userID     Int      @unique
+  resetToken String
+  expiresAt  DateTime
+  user       User     @relation(fields: [userID], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }

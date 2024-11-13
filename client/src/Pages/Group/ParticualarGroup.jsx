@@ -22,10 +22,14 @@ import {
   FaBars,
   FaTimes,
 } from "react-icons/fa";
+import { LuFiles } from "react-icons/lu";
 import EventDrawer from "../../Components/EventDrawer";
 import EventDetailModal from "../../Components/EventDetailDrawer";
 import groupIcon from "../../assets/Group.svg";
 import MembersDrawer from "@/Components/MembersDrawer";
+import { GrAnnounce } from "react-icons/gr";
+import { FaNoteSticky } from "react-icons/fa6";
+import { Presentation } from "lucide-react";
 
 const GroupDetail = () => {
   const { currentUser } = useSelector((state) => state.user || {});
@@ -51,7 +55,8 @@ const GroupDetail = () => {
   const [rsvpLoading, setRsvpLoading] = useState(false);
   const [showMembersDrawer, setShowMembersDrawer] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
+  const [announcements, setAnnouncements] = useState([]);
+
   useEffect(() => {
     const fetchGroup = async () => {
       try {
@@ -72,7 +77,16 @@ const GroupDetail = () => {
         } else {
           setEvents([]);
         }
-        
+
+        const announcementsResponse = await axios.get(
+          `http://localhost:8000/api/groups/${id}/announcements`,
+          { withCredentials: true }
+        );
+
+        if (Array.isArray(announcementsResponse.data.data)) {
+          setAnnouncements(announcementsResponse.data.data.slice(0, 3)); // Get top 3 announcements
+        }
+
         if (currentUser.id === response.data.data.leaderId) {
           setIsLeader(true);
         }
@@ -196,7 +210,7 @@ const GroupDetail = () => {
         </div>
 
         {/* Sidebar - Desktop */}
-        <div className="hidden lg:block lg:w-64 bg-gray-800 p-6 min-h-screen">
+        <div className="hidden ml-1 mt-1 rounded-xl lg:block lg:w-64 bg-gray-800 p-6 fixed min-h-screen">
           <SidebarComponent
             id={id}
             setShowModal={setShowModal}
@@ -206,9 +220,9 @@ const GroupDetail = () => {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 p-4 lg:p-8">
+        <div className="flex-1 lg:ml-64 lg:pt-2 p-4 lg:p-8 ">
           {/* Header Card */}
-          <header className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-2xl mb-8 overflow-hidden">
+          <header className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-2xl mb-3 overflow-hidden">
             <div className="flex flex-col md:flex-row items-center justify-between p-4 md:p-8 space-y-4 md:space-y-0">
               <div className="text-center md:text-left">
                 <h1 className="text-3xl md:text-5xl font-bold tracking-tight">
@@ -227,7 +241,7 @@ const GroupDetail = () => {
           </header>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-4">
             {/* Group Stats Card */}
             <Card className="bg-gray-800 border-none shadow-xl hover:shadow-2xl transition-shadow duration-300">
               <div className="flex items-center space-x-4">
@@ -242,6 +256,54 @@ const GroupDetail = () => {
                     <span className="font-medium text-blue-400">Members:</span>{" "}
                     {members.length}
                   </p>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="bg-gray-800 border-none shadow-xl hover:shadow-2xl transition-shadow duration-300">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <div className="p-3 bg-green-600 rounded-full">
+                    <GrAnnounce className="text-xl md:text-2xl text-white" />
+                  </div>
+                  <h3 className="text-xl md:text-2xl font-semibold">
+                    Latest Announcements
+                  </h3>
+                </div>
+              </div>
+              <div className="space-y-3">
+                {announcements.length > 0 ? (
+                  announcements.map((announcement) => (
+                    <AnnouncementCard key={announcement.id} announcement={announcement} />
+                  ))
+                ) : (
+                  <p className="text-gray-400 text-center py-4">
+                    No announcements yet
+                  </p>
+                )}
+              </div>
+            </Card>
+
+            {/* Quick Actions Card */}
+            <Card className="bg-gray-800 border-none shadow-xl hover:shadow-2xl transition-shadow duration-300">
+              <div className="flex items-center space-x-4">
+                <div className="p-3 bg-purple-600 rounded-full">
+                  <FaCogs className="text-2xl md:text-3xl text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl md:text-2xl font-semibold">
+                    Quick Actions
+                  </h2>
+                  <div className="mt-4 space-y-2">
+                    <Button onClick={() => setShowMembersDrawer(true)} className="w-full">
+                      View Members
+                    </Button>
+                    {isLeader && (
+                      <Button onClick={() => setShowDrawer(true)} className="w-full">
+                        Create Event
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             </Card>
@@ -293,6 +355,7 @@ const GroupDetail = () => {
         </div>
       </div>
 
+      
       {/* Modals and Drawers */}
       <AddMemberModal
         showModal={showModal}
@@ -336,7 +399,7 @@ const GroupDetail = () => {
 
 const SidebarItem = ({ to, icon: Icon, text, onClick }) => {
   const navigate = useNavigate();
-  
+
   const handleClick = (e) => {
     if (onClick) {
       onClick(e);
@@ -370,7 +433,7 @@ const SidebarComponent = ({
   setShowMembersDrawer,
   onClose,
 }) => (
-  <div className="h-full overflow-y-auto">
+  <div className="h-full ml-2 overflow-y-auto">
     <div className="flex items-center justify-between mb-8">
       <h2 className="text-2xl font-semibold text-blue-400">Menu</h2>
       {onClose && (
@@ -422,9 +485,28 @@ const SidebarComponent = ({
         onClick={() => onClose && onClose()}
       />
       <SidebarItem
-        to="/notifications"
-        icon={FaBell}
-        text="Notifications"
+        to={`/group/${id}/announcement`}
+        icon={GrAnnounce}
+        text="Announcement"
+        onClick={() => onClose && onClose()}
+        state={ isLeader}
+      />
+      <SidebarItem
+        to={`/group/${id}/note`}
+        icon={FaNoteSticky}
+        text="Notes"
+        onClick={() => onClose && onClose()}
+      />
+      <SidebarItem
+        to={`/groups/${id}/filesection`}
+        icon={LuFiles}
+        text="Files"
+        onClick={() => onClose && onClose()}
+      />
+      <SidebarItem
+        to={`/meeting-list/${id}`}
+        icon={Presentation}
+        text="Previous Meetings"
         onClick={() => onClose && onClose()}
       />
     </ul>
@@ -438,10 +520,13 @@ const EventCard = ({ event, onClick }) => {
     hour12: true,
   });
 
-  const formattedDate = new Date(event.startTime).toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric'
-  });
+  const formattedDate = new Date(event.startTime).toLocaleDateString(
+    undefined,
+    {
+      month: "short",
+      day: "numeric",
+    }
+  );
 
   return (
     <div
@@ -464,10 +549,7 @@ const EventCard = ({ event, onClick }) => {
           <span className="text-xs md:text-sm text-gray-400">
             {formattedDate}
           </span>
-          <Badge
-            color="purple"
-            className="ml-2 text-xs hidden md:inline-block"
-          >
+          <Badge color="purple" className="ml-2 text-xs hidden md:inline-block">
             {event.isRSVP ? "RSVP'd" : "Open"}
           </Badge>
         </div>
@@ -478,8 +560,6 @@ const EventCard = ({ event, onClick }) => {
     </div>
   );
 };
-
-
 
 const AddMemberModal = ({
   showModal,
@@ -541,23 +621,26 @@ const AddMemberModal = ({
   </Modal>
 );
 
-const ErrorMessage = ({ message }) => (
-  <div className="flex items-center justify-center min-h-screen bg-gray-950 text-white p-4">
-    <div className="text-center">
-      <FaTimes className="text-red-500 text-4xl mb-4 mx-auto" />
-      <h2 className="text-xl md:text-2xl font-bold mb-2">Error</h2>
-      <p className="text-gray-400">{message}</p>
-    </div>
-  </div>
-);
+const AnnouncementCard = ({ announcement }) => {
+  const formattedDate = new Date(announcement.createdAt).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
 
-const LoadingSpinner = () => (
-  <div className="flex items-center justify-center min-h-screen bg-gray-950">
-    <div className="text-center">
-      <Spinner size="xl" className="mb-4" />
-      <p className="text-gray-400">Loading group details...</p>
+  return (
+    <div className="p-3 bg-gray-700 rounded-lg">
+      <div className="flex justify-between items-start mb-2">
+        <h4 className="font-semibold text-blue-300 truncate max-w-[200px]">
+          {announcement.title}
+        </h4>
+        <span className="text-xs text-gray-400">{formattedDate}</span>
+      </div>
+      <p className="text-sm text-gray-300 line-clamp-2">
+        {announcement.content}
+      </p>
     </div>
-  </div>
-);
+  );
+};
 
 export default GroupDetail;

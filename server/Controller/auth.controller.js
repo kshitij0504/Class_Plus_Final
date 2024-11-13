@@ -415,10 +415,140 @@ async function signOut(req, res) {
     });
   }
 }
+
+async function forgotPassword(req, res) {
+  const { email } = req.body;
+
+  try {
+    // Step 1: Check if the user exists
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
+    }
+
+    // Step 2: Generate a reset token (e.g., JWT or a random token)
+    const resetToken = jwt.sign({ email: user.email }, process.env.JWT_SECRET_KEY, {
+      expiresIn: "1h", // Token expires in 1 hour
+    });
+
+    // Step 3: Store the reset token in the database (optional, if you want to keep track)
+    await prisma.passwordReset.create({
+      data: {
+        userID: user.id,
+        resetToken,
+        expiresAt: new Date(Date.now() + 3600000), // Expiry time (1 hour)
+      },
+    });
+
+    // Step 4: Send the reset password email
+    const resetPasswordUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
+      auth: {
+        user: "mozakshitij@gmail.com",
+        pass: "nlni qcfk mjur qloa",
+      },
+    });
+
+    const resetPasswordTemplate = `
+      <html>
+        <body>
+          <h3>Forgot your password?</h3>
+          <p>We received a request to reset the password for your Class Plus account. Click the link below to reset your password:</p>
+          <a href="${resetPasswordUrl}">Reset Password</a>
+          <p>If you didn't request a password reset, please ignore this email.</p>
+        </body>
+      </html>
+    `;
+
+    await transporter.sendMail({
+      from: "kshitijoza20@gmail.com",
+      to: email,
+      subject: "Class Plus Password Reset",
+      html: resetPasswordTemplate,
+    });
+
+    return res.status(200).json({
+      message: "Password reset link has been sent to your email",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Internal Server Error",
+      success: false,
+    });
+  }
+}
+
+async function resetPassword(req, res) {
+  const { token, newPassword } = req.body;
+
+  try {
+    // Step 1: Verify the reset token
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+    } catch (error) {
+      return res.status(400).json({ message: "Invalid or expired token" });
+    }
+
+    // Step 2: Find the user associated with the email in the token
+    const user = await prisma.user.findUnique({
+      where: { email: decoded.email },
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
+    }
+
+    // Step 3: Check if the token has expired (optional)
+    const resetRecord = await prisma.passwordReset.findFirst({
+      where: { userID: user.id },
+    });
+      
+
+    if (!resetRecord || resetRecord.expiresAt < new Date()) {
+      return res.status(400).json({ message: "Token has expired" });
+    }
+
+    // Step 4: Hash the new password
+    const salt = await bcryptjs.genSalt(10);
+    const hashedPassword = await bcryptjs.hash(newPassword, salt);
+
+    // Step 5: Update the user's password
+    await prisma.user.update({
+      where: { email: decoded.email },
+      data: { password: hashedPassword },
+    });
+
+    // Step 6: Remove the reset token from the database (optional)
+    await prisma.passwordReset.delete({
+      where: { userID: user.id },
+    });
+
+    return res.status(200).json({
+      message: "Password has been successfully reset",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Internal Server Error",
+      success: false,
+    });
+  }
+}
+
 module.exports = {
   signup,
   sendOTPverification,
   VerifyOTP,
   GoogleAuth,
   signOut,
+  forgotPassword,
+  resetPassword
 };

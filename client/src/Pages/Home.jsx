@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
-import io from "socket.io-client";
-import axios from "axios"; // Import axios for API requests
+import axios from "axios";
 import Header from "../Components/Header";
 import { SiGooglemeet } from "react-icons/si";
 import { AiFillSchedule } from "react-icons/ai";
 import { TbClockCheck } from "react-icons/tb";
-import { motion } from "framer-motion";
+import { BsKanban } from "react-icons/bs";
+import Calendar from "@/Components/home/calendar";
 
 const quotes = [
   "The only way to do great work is to love what you do.",
@@ -23,173 +23,156 @@ const Home = () => {
     hour: "2-digit",
     minute: "2-digit",
   });
-  const date = new Intl.DateTimeFormat("en-US", { dateStyle: "full" }).format(
-    now
-  );
+  const date = new Intl.DateTimeFormat("en-US", { dateStyle: "full" }).format(now);
 
   const [notifications, setNotifications] = useState(() => {
     const savedNotifications = localStorage.getItem("notifications");
     return savedNotifications ? JSON.parse(savedNotifications) : [];
   });
-
-  const [upcomingSessions, setUpcomingSessions] = useState([]); 
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [events, setEvents] = useState([]);
+  const [upcomingSessions, setUpcomingSessions] = useState([]);
   const dailyQuote = quotes[Math.floor(Math.random() * quotes.length)];
 
   useEffect(() => {
-    if (!currentUser || !currentUser.id) return;
+    if (!currentUser?.id) return;
 
     const fetchUpcomingSessions = async () => {
       try {
         const { data } = await axios.get(
           "http://localhost:8000/api/users/me/top-sessions",
-          {
-            withCredentials: true,
-          }
+          { withCredentials: true }
         );
-    
-        console.log("API Response:", data); // Log the entire response
-    
-        if (data && data.data && Array.isArray(data.data)) {
-          setUpcomingSessions(data.data); 
-        } else {
-          setUpcomingSessions([]); 
-        }
+        setUpcomingSessions(data?.data || []);
       } catch (error) {
         console.error("Error fetching upcoming sessions:", error);
-        setUpcomingSessions([]); // Set to empty array in case of error
+        setUpcomingSessions([]);
       }
     };
-    
 
     fetchUpcomingSessions();
+  }, [currentUser?.id]);
 
-    // const socket = io("http://localhost:8000", {
-    //   withCredentials: true,
-    // });
+  const handleDateSelect = (date) => {
+    setSelectedDate(date);
+    const dateEvents = upcomingSessions.filter(
+      (session) => new Date(session.startTime).toDateString() === date.toDateString()
+    );
+    setEvents(dateEvents);
+  };
 
-    // socket.on("connect", () => {
-    //   console.log("Connected to server");
-    // });
-
-    // socket.on(`notification_${currentUser.id}`, (notification) => {
-    //   setNotifications((prevNotifications) => {
-    //     const updatedNotifications = [...prevNotifications, notification];
-
-    //     localStorage.setItem(
-    //       "notifications",
-    //       JSON.stringify(updatedNotifications)
-    //     );
-
-    //     return updatedNotifications;
-    //   });
-    // });
-
-    // return () => {
-    //   socket.disconnect();
-    // };
-  }, [currentUser.id, currentUser.token]);
+  const DashboardCard = ({ title, icon: Icon, gradient, items, textColor = "text-white" }) => (
+    <div
+      className={`rounded-xl font-poppins p-4 sm:p-6 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${gradient}`}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <h3 className={`text-lg sm:text-xl font-bold flex items-center gap-2 ${textColor}`}>
+          <Icon className="text-xl sm:text-2xl" />
+          {title}
+        </h3>
+      </div>
+      <ul className="space-y-2">
+        {items.length > 0 ? (
+          items.map((item, index) => (
+            <li
+              key={index}
+              className={`p-2 sm:p-3 rounded-lg ${
+                textColor === "text-white" ? "bg-white/10" : "bg-black/5"
+              } backdrop-blur-sm transition-colors duration-200 hover:bg-opacity-20 text-sm sm:text-base`}
+            >
+              {item}
+            </li>
+          ))
+        ) : (
+          <li
+            className={`p-2 sm:p-3 rounded-lg ${
+              textColor === "text-white" ? "bg-white/10" : "bg-black/5"
+            } text-sm sm:text-base`}
+          >
+            No items to display
+          </li>
+        )}
+      </ul>
+    </div>
+  );
 
   return (
-    <section className="flex flex-col gap-5 p-4 text-white mt-0">
+    <div className="min-h-screen bg-gray-900 text-white font-poppins">
       <Header />
-
-      {/* Time and Date Section with Image Background */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.6 }}
-        className="h-[250px] md:h-[300px] w-full rounded-[20px] bg-hero bg-cover bg-center flex flex-col justify-between p-4 md:p-8 shadow-lg"
-        style={{
-          backgroundImage: `url('/src/assets/hero-background.png')`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      >
-        <div className="flex flex-col gap-2 p-2 md:p-4 rounded-lg">
-          <h1 className="text-3xl font-extrabold md:text-5xl">{time}</h1>
-          <p className="text-base font-medium text-white/80 md:text-lg">
-            {date}
-          </p>
-          <h2 className="text-2xl md:text-3xl font-semibold mb-1 md:mb-2">
-            Welcome, {currentUser.username || "User"}!
-          </h2>
-          <p className="text-sm md:text-lg italic text-white/90">
-            {dailyQuote}
-          </p>
+      
+      <main className="container mx-auto px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
+        {/* Hero Section */}
+        <div className="relative rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 overflow-hidden">
+          <div className="absolute inset-0 bg-black/20" />
+          <div className="relative p-4 sm:p-8 space-y-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h1 className="text-3xl sm:text-5xl font-bold tracking-tight">{time}</h1>
+                <p className="text-base sm:text-xl text-white/80 mt-1 sm:mt-2">{date}</p>
+              </div>
+              <div className="text-left sm:text-right w-full sm:w-auto">
+                <h2 className="text-2xl sm:text-3xl font-semibold">
+                  Welcome, {currentUser.username || "User"}!
+                </h2>
+                <p className="text-base sm:text-lg italic text-white/90 mt-1 sm:mt-2 max-w-lg">
+                  {dailyQuote}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
-      </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mt-4">
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          className="bg-gradient-to-r from-blue-500 to-teal-500 p-4 md:p-6 rounded-xl shadow-lg"
-        >
-          <h3 className="text-lg md:text-xl font-bold mb-2 md:mb-4 flex items-center gap-2 text-white">
-            <SiGooglemeet /> Upcoming Meetings
-          </h3>
-          <ul className="space-y-1 md:space-y-2 text-white/90">
-            <li className="p-2 md:p-3 rounded-md bg-white/10">
-              Meeting 1 - 12:30 PM
-            </li>
-            <li className="p-2 md:p-3 rounded-md bg-white/10">
-              Meeting 2 - 2:00 PM
-            </li>
-            <li className="p-2 md:p-3 rounded-md bg-white/10">
-              Meeting 3 - 4:15 PM
-            </li>
-          </ul>
-        </motion.div>
-
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          className="bg-gradient-to-r from-yellow-400 to-orange-500 p-4 md:p-6 rounded-xl shadow-lg"
-        >
-          <h3 className="text-lg md:text-xl font-bold mb-2 md:mb-4 flex items-center gap-2 text-black">
-            <AiFillSchedule /> Daily Schedule
-          </h3>
-          <ul className="space-y-1 md:space-y-2 text-black/80">
-            {upcomingSessions.length > 0 ? (
-              upcomingSessions.map((session, index) => (
-                <li key={index} className="p-2 md:p-3 rounded-md bg-white/20">
-                  {session.title} -{" "}
-                  {new Date(session.startTime).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </li>
-              ))
-            ) : (
-              <li className="p-2 md:p-3 rounded-md bg-white/20">
-                No upcoming sessions
-              </li>
-            )}
-          </ul>
-        </motion.div>
-
-        {/* Recent Activity */}
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          className="bg-gradient-to-r from-green-400 to-emerald-500 p-4 md:p-6 rounded-xl shadow-lg"
-        >
-          <h3 className="text-lg md:text-xl font-bold mb-2 md:mb-4 flex items-center gap-2 text-black">
-            <TbClockCheck /> Recent Activity
-          </h3>
-          <ul className="space-y-1 md:space-y-2 text-black/80">
-            {notifications.length > 0 ? (
-              notifications.map((notification, index) => (
-                <li key={index} className="p-2 md:p-3 rounded-md bg-white/20">
-                  {notification.message}
-                </li>
-              ))
-            ) : (
-              <li className="p-2 md:p-3 rounded-md bg-white/20">
-                No recent activity
-              </li>
-            )}
-          </ul>
-        </motion.div>
-      </div>
-    </section>
+        {/* Dashboard Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            <DashboardCard
+              title="Meetings"
+              icon={SiGooglemeet}
+              gradient="bg-gradient-to-br from-blue-500 to-teal-500"
+              items={[
+                "Team Sync - 12:30 PM",
+                "Client Meeting - 2:00 PM"
+              ]}
+            />
+            <DashboardCard
+              title="Schedule"
+              icon={AiFillSchedule}
+              gradient="bg-gradient-to-br from-amber-400 to-orange-500"
+              items={upcomingSessions.slice(0, 2).map(session => 
+                `${session.title} - ${new Date(session.startTime).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}`
+              )}
+              textColor="text-black"
+            />
+            <DashboardCard
+              title="Activity"
+              icon={TbClockCheck}
+              gradient="bg-gradient-to-br from-green-400 to-emerald-500"
+              items={notifications.slice(0, 2).map(n => n.message) || []}
+              textColor="text-black"
+            />
+            <DashboardCard
+              title="Tasks"
+              icon={BsKanban}
+              gradient="bg-gradient-to-br from-purple-500 to-pink-500"
+              items={[
+                "Complete Project Plan",
+                "Review Deliverables"
+              ]}
+            />
+          </div>
+          
+          <div className="bg-white/10 rounded-xl p-4 sm:p-6 backdrop-blur-sm">
+            <Calendar
+              events={upcomingSessions}
+              onDateSelect={handleDateSelect}
+            />
+          </div>
+        </div>
+      </main>
+    </div>
   );
 };
 

@@ -2,24 +2,19 @@ import React, { useState } from "react";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import { parse, format, startOfWeek, getDay } from "date-fns";
 import enUS from "date-fns/locale/en-US";
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { 
-  Card, 
-  CardContent, 
-  Button, 
-  Typography, 
-  Box, 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
-  DialogActions, 
-  CircularProgress,
-  IconButton
-} from '@mui/material';
-import { ChevronLeft, ChevronRight, Today, Check, Close } from '@mui/icons-material';
-import "react-big-calendar/lib/css/react-big-calendar.css";
-import '@fontsource/poppins';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, X } from "lucide-react";
 import axios from "axios";
+import "react-big-calendar/lib/css/react-big-calendar.css";
 
 const locales = { "en-US": enUS };
 
@@ -29,34 +24,6 @@ const localizer = dateFnsLocalizer({
   startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 1 }),
   getDay,
   locales,
-});
-
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#1D4ED8', // Tailwind blue-600
-    },
-    secondary: {
-      main: '#C4314B', // Teams red
-    },
-    background: {
-      default: '#F5F5F5',
-      paper: '#FFFFFF',
-    },
-  },
-  typography: {
-    fontFamily: 'Segoe UI, sans-serif',
-  },
-  components: {
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          textTransform: 'none',
-          borderRadius: 3,
-        },
-      },
-    },
-  },
 });
 
 const StudySessionCalendar = ({ events, onRSVPUpdate }) => {
@@ -118,66 +85,80 @@ const StudySessionCalendar = ({ events, onRSVPUpdate }) => {
     const viewNames = ['month', 'week', 'day'];
 
     return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2, bgcolor: 'background.paper', p: 2, borderRadius: 1 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', mb: 2 }}>
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <IconButton onClick={() => handleNavigate('PREV')} size="small">
-              <ChevronLeft />
-            </IconButton>
-            <IconButton onClick={() => handleNavigate('NEXT')} size="small">
-              <ChevronRight />
-            </IconButton>
-            <IconButton onClick={() => handleNavigate('TODAY')} size="small">
-              <Today />
-            </IconButton>
-          </Box>
-          <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+      <div className="flex flex-col space-y-4 p-4 bg-white rounded-lg shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => handleNavigate('PREV')}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => handleNavigate('NEXT')}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              className="ml-2"
+              onClick={() => handleNavigate('TODAY')}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              Today
+            </Button>
+          </div>
+          
+          <h2 className="text-lg font-semibold">
             {format(new Date(date), "MMMM yyyy")}
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          </h2>
+          
+          <div className="flex space-x-2">
             {viewNames.map(name => (
               <Button
                 key={name}
+                variant={view === name ? "default" : "outline"}
                 onClick={() => {
                   toolbar.onView(name);
                   handleViewChange(name);
                 }}
-                variant={view === name ? "contained" : "outlined"}
-                size="small"
-                sx={{ minWidth: 80 }}
+                className="w-20"
               >
                 {name.charAt(0).toUpperCase() + name.slice(1)}
               </Button>
             ))}
-          </Box>
-        </Box>
-      </Box>
+          </div>
+        </div>
+      </div>
     );
   };
 
   const eventStyleGetter = (event) => {
-    let style = {
-      backgroundColor: '#1D4ED8', // Tailwind blue-600
-      borderRadius: '3px',
-      opacity: 0.8,
-      color: 'white',
-      border: 'none',
-      display: 'block'
-    };
-
+    let className = "px-2 py-1 rounded-md text-sm font-medium ";
+    
     if (event.rsvpStatus === 'Confirmed') {
-      style.backgroundColor = '#92C353';
+      className += "bg-green-100 text-green-800 border border-green-200";
     } else if (event.rsvpStatus === 'Declined') {
-      style.backgroundColor = '#C4314B';
+      className += "bg-red-100 text-red-800 border border-red-200";
+    } else {
+      className += "bg-blue-100 text-blue-800 border border-blue-200";
     }
 
-    return { style };
+    return {
+      style: {
+        backgroundColor: 'transparent'
+      },
+      className
+    };
   };
 
   return (
-    <ThemeProvider theme={theme}>
-      <Card sx={{ maxWidth: '100%', mx: 'auto', boxShadow: 3, overflow: 'hidden', bgcolor: 'bg-blue-600' }}>
-        <CardContent sx={{ p: 2 }}>
+    <div className="max-w-7xl mx-auto p-4">
+      <Card className="border rounded-xl shadow-lg">
+        <CardContent className="p-6">
           <Calendar
             localizer={localizer}
             events={events}
@@ -187,62 +168,74 @@ const StudySessionCalendar = ({ events, onRSVPUpdate }) => {
             onView={handleViewChange}
             date={date}
             onNavigate={handleNavigate}
-            style={{ height: "70vh" }}
+            style={{ height: "75vh" }}
             selectable={true}
             onSelectEvent={handleSelectEvent}
             components={{ toolbar: CustomToolbar }}
             eventPropGetter={eventStyleGetter}
+            className="rounded-lg bg-white"
           />
-          
-          <Dialog open={isModalOpen} onClose={handleCloseModal} fullWidth maxWidth="sm">
-            <DialogTitle sx={{ bgcolor: 'primary.main', color: 'white' }}>
-              {selectedEvent?.title}
-            </DialogTitle>
-            <DialogContent dividers>
-              {selectedEvent ? (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <Typography variant="body1">
-                    {selectedEvent?.description || "No description available."}
-                  </Typography>
-                  
 
-                  {/* <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body1">RSVP Status:</Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                      {selectedEvent.rsvpStatus}
-                    </Typography>
-                  </Box> */}
-                </Box>
-              ) : (
-                <CircularProgress />
+          <Dialog open={isModalOpen} onOpenChange={() => handleCloseModal()}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center justify-between">
+                  <span>{selectedEvent?.title}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 rounded-full"
+                    onClick={handleCloseModal}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </DialogTitle>
+              </DialogHeader>
+
+              {selectedEvent && (
+                <div className="space-y-4">
+                  <div className="text-sm text-gray-600">
+                    {format(new Date(selectedEvent.start), "EEEE, MMMM d, yyyy")}
+                    <br />
+                    {format(new Date(selectedEvent.start), "h:mm a")} - {format(new Date(selectedEvent.end), "h:mm a")}
+                  </div>
+                  
+                  <p className="text-gray-700">
+                    {selectedEvent.description || "No description available."}
+                  </p>
+
+                  {selectedEvent.rsvpStatus && (
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-600">Status:</span>
+                      <Badge 
+                        variant={selectedEvent.rsvpStatus === 'Confirmed' ? 'success' : 
+                               selectedEvent.rsvpStatus === 'Declined' ? 'destructive' : 
+                               'secondary'}
+                      >
+                        {selectedEvent.rsvpStatus}
+                      </Badge>
+                    </div>
+                  )}
+                </div>
               )}
+
+              {errorRSVP && (
+                <p className="text-sm text-red-600 mt-2">{errorRSVP}</p>
+              )}
+
+              <DialogFooter className="flex justify-end space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={handleCloseModal}
+                >
+                  Close
+                </Button>
+              </DialogFooter>
             </DialogContent>
-            {/* <DialogActions>
-              <Button
-                onClick={() => handleRSVP('Confirmed')}
-                color="success"
-                disabled={loadingRSVP || selectedEvent?.rsvpStatus === 'Confirmed'}
-              >
-                {loadingRSVP ? <CircularProgress size={24} /> : <Check />}
-                Confirm
-              </Button>
-              <Button
-                onClick={() => handleRSVP('Declined')}
-                color="error"
-                disabled={loadingRSVP || selectedEvent?.rsvpStatus === 'Declined'}
-              >
-                {loadingRSVP ? <CircularProgress size={24} /> : <Close />}
-                Decline
-              </Button>
-              <Button onClick={handleCloseModal} color="primary">
-                Close
-              </Button>
-            </DialogActions> */}
-            {errorRSVP && <Typography color="error" sx={{ padding: 2 }}>{errorRSVP}</Typography>}
           </Dialog>
         </CardContent>
       </Card>
-    </ThemeProvider>
+    </div>
   );
 };
 

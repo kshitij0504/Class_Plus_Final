@@ -24,7 +24,7 @@ const Sidebar = ({ children }) => {
         {isMobileOpen ? <ChevronFirst /> : <ChevronLast />}
       </button>
       <aside
-        className={`fixed inset-y-0 left-0 transform transition-transform duration-300 ease-in-out md:static md:translate-x-0 h-screen z-40 bg-gray-800 text-white border-r-0 shadow-sm ${
+        className={`fixed inset-y-0 left-0 transform transition-transform duration-300 ease-in-out md:static md:translate-x-0 h-screen z-40 bg-gray-800 text-white font-poppins border-r-0 shadow-sm ${
           isMobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
