@@ -1,12 +1,12 @@
 const jwt = require("jsonwebtoken");
-const prisma = require("../config/connectDb")
+const prisma = require("../config/connectDb");
 const bcryptjs = require("bcryptjs");
-
 
 async function checkEmail(req, res) {
   try {
     const { email, password } = req.body;
 
+    // Find user by email
     const user = await prisma.user.findUnique({
       where: { email },
       select: {
@@ -17,7 +17,7 @@ async function checkEmail(req, res) {
         createdAt: true,
         updatedAt: true,
         avatar: true,
-        role: true
+        role: true,
       },
     });
 
@@ -28,8 +28,8 @@ async function checkEmail(req, res) {
       });
     }
 
+    // Verify password
     const verifyPassword = await bcryptjs.compare(password, user.password);
-
     if (!verifyPassword) {
       return res.status(400).json({
         message: "Invalid password",
@@ -37,44 +37,43 @@ async function checkEmail(req, res) {
       });
     }
 
-    
-
+    // Create JWT payload
     const payload = {
       id: user.id,
-      role: user.role
+      role: user.role,
     };
 
+    // Sign token
     const token = jwt.sign(payload, process.env.JWT_SECRET_KEY, {
-      expiresIn: "1d",
+      expiresIn: "1d", // Token valid for 1 day
     });
 
+    // Set cookie options
     const cookieOptions = {
-      httpOnly: true, 
-      // secure: true,   
-      sameSite: 'strict',
-      // path: '/'
+      httpOnly: true, // Prevents client-side access
+      secure: process.env.NODE_ENV === "production", // Enable in production (HTTPS)
+      sameSite: 'Strict', // Helps prevent CSRF attacks
+      path: '/', // Accessible across the entire site
     };
 
-    console.log(token)
-
-    res.cookie("token", token, cookieOptions).json({
-      message: "Login successful",
-      success: true,
-      data: {
-        token: token,
-        user: {
-          id: user.id,
-          email: user.email,
-          username: user.username,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt,
-          avatar: user.avatar
+    // Set cookie and send response
+    res
+      .cookie("token", token, cookieOptions)
+      .status(200)
+      .json({
+        message: "Login successful",
+        success: true,
+        data: {
+          user: {
+            id: user.id,
+            email: user.email,
+            username: user.username,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+            avatar: user.avatar,
+          },
         },
-      },
-    })
-
-    // return res.status(200).json({
-    // });
+      });
   } catch (error) {
     console.error("Error in checkEmail:", error);
     return res.status(500).json({
