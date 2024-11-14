@@ -58,7 +58,7 @@ const SignUp = () => {
     setLoading(true);
 
     try {
-      const URL = `http://localhost:8000/api/signup`;
+      const URL = `https://class-plus-final.onrender.com/api/signup`;
       const response = await axios.post(URL, formdata);
       toast.success(response.data.message);
 

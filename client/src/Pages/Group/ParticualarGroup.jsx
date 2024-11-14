@@ -64,14 +64,14 @@ const GroupDetail = () => {
     const fetchGroup = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:8000/api/groups/${id}`
+          `https://class-plus-final.onrender.com/api/groups/${id}`
         );
         setGroup(response.data.data);
         setJoinCode(response.data.data.joinCode);
         setMembers(response.data.data?.members || []);
 
         const sessionsResponse = await axios.get(
-          `http://localhost:8000/api/groups/${id}/sessions`,
+          `https://class-plus-final.onrender.com/api/groups/${id}/sessions`,
           { withCredentials: true }
         );
 
@@ -82,7 +82,7 @@ const GroupDetail = () => {
         }
 
         const announcementsResponse = await axios.get(
-          `http://localhost:8000/api/groups/${id}/announcements`,
+          `https://class-plus-final.onrender.com/api/groups/${id}/announcements`,
           { withCredentials: true }
         );
 
@@ -106,7 +106,7 @@ const GroupDetail = () => {
   const handleAddMember = async () => {
     try {
       const response = await axios.post(
-        `http://localhost:8000/api/groups/${id}/add-member`,
+        `https://class-plus-final.onrender.com/api/groups/${id}/add-member`,
         { username: newMember }
       );
 
@@ -132,7 +132,7 @@ const GroupDetail = () => {
       setRsvpLoading(true);
       try {
         const response = await axios.get(
-          `http://localhost:8000/api/session/${event.id}/getAllrsvp`,
+          `https://class-plus-final.onrender.com/api/session/${event.id}/getAllrsvp`,
           {
             withCredentials: true,
           }

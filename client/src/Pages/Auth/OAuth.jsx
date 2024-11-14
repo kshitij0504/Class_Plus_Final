@@ -32,7 +32,7 @@ const OAuth = () => {
       
       // Make server request with the token
       const response = await axios.post(
-        "http://localhost:8000/api/google-auth",
+        "https://class-plus-final.onrender.com/api/google-auth",
         {
           username: resultsFromGoogle.user.displayName,
           email: resultsFromGoogle.user.email,

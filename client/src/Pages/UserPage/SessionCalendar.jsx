@@ -40,7 +40,7 @@ const SessionCalendar = () => {
   useEffect(() => {
     const fetchSessions = async () => {
       try {
-        const response = await axios.get('http://localhost:8000/api/sessions/rsvp', { withCredentials: true });
+        const response = await axios.get('https://class-plus-final.onrender.com/api/sessions/rsvp', { withCredentials: true });
         const responseData = response.data;
         console.log(responseData)
 

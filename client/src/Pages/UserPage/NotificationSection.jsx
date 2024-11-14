@@ -86,8 +86,8 @@ const NotificationSection = () => {
 
       try {
         const [userResponse, groupResponse] = await Promise.all([
-          axios.get(`http://localhost:8000/api/notifications/${currentUser.id}`),
-          axios.get(`http://localhost:8000/api/groupnotification/${currentUser.id}`)
+          axios.get(`https://class-plus-final.onrender.com/api/notifications/${currentUser.id}`),
+          axios.get(`https://class-plus-final.onrender.com/api/groupnotification/${currentUser.id}`)
         ]);
 
         if (userResponse.data?.notifications) {
@@ -116,7 +116,7 @@ const NotificationSection = () => {
   useEffect(() => {
     if (!currentUser?.id) return;
 
-    const socket = io("http://localhost:8000", {
+    const socket = io("https://class-plus-final.onrender.com", {
       auth: { token: token },
     });
 

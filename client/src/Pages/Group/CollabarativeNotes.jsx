@@ -53,7 +53,7 @@ const CollaborativeNotes = () => {
   const fetchNotes = async () => {
     try {
       const response = await axios.get(
-        `http://localhost:8000/api/group/${groupId}/notes`,
+        `https://class-plus-final.onrender.com/api/group/${groupId}/notes`,
         { withCredentials: true }
       );
       console.log(response);
@@ -68,7 +68,7 @@ const CollaborativeNotes = () => {
   const handleCreateNote = async () => {
     try {
       const response = await axios.post(
-        "http://localhost:8000/api/group/note",
+        "https://class-plus-final.onrender.com/api/group/note",
         { ...newNote, groupId },
         { withCredentials: true }
       );
@@ -83,7 +83,7 @@ const CollaborativeNotes = () => {
   const handleUpdateNote = async (noteId, updatedData) => {
     try {
       const response = await axios.put(
-        `http://localhost:8000/api/group/${groupId}/${noteId}`,
+        `https://class-plus-final.onrender.com/api/group/${groupId}/${noteId}`,
         updatedData,
         { withCredentials: true }
       );
@@ -101,7 +101,7 @@ const CollaborativeNotes = () => {
 
     try {
       const response = await axios.post(
-        `http://localhost:8000/api/group/${noteId}/comments`,
+        `https://class-plus-final.onrender.com/api/group/${noteId}/comments`,
         { content: newComment },
         { withCredentials: true }
       );
@@ -127,7 +127,7 @@ const CollaborativeNotes = () => {
   const fetchNoteHistory = async (noteId) => {
     try {
       const response = await axios.get(
-        `http://localhost:8000/api/group/${noteId}/history`,
+        `https://class-plus-final.onrender.com/api/group/${noteId}/history`,
         { withCredentials: true }
       );
       setNoteHistory(response.data);

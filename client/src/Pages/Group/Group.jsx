@@ -16,7 +16,7 @@ const Group = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:8000/api/creategroup",
+        "https://class-plus-final.onrender.com/api/creategroup",
         {
           name,
           description,

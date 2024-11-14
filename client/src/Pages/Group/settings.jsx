@@ -15,7 +15,7 @@ const Settings = () => {
   useEffect(() => {
     const fetchTeamCode = async () => {
       try {
-        const response = await axios.get(`http://localhost:8000/api/groups/${id}`);
+        const response = await axios.get(`https://class-plus-final.onrender.com/api/groups/${id}`);
         setTeamCode(response.data.data.joinCode);
       } catch (error) {
         console.error("Error fetching team code:", error);

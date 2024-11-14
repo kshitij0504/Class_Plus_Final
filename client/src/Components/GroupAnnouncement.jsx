@@ -72,7 +72,7 @@ const GroupAnnouncements = () => {
     try {
       setLoading(true);
       const response = await axios.get(
-        `http://localhost:8000/api/groups/${groupId}/announcements`,
+        `https://class-plus-final.onrender.com/api/groups/${groupId}/announcements`,
         {
           params: { page, limit: 10 },
           withCredentials: true,
@@ -114,7 +114,7 @@ const GroupAnnouncements = () => {
       if (!content?.trim()) return;
 
       await axios.post(
-        `http://localhost:8000/api/announcements/${announcementId}/comments`,
+        `https://class-plus-final.onrender.com/api/announcements/${announcementId}/comments`,
         { content },
         { withCredentials: true }
       );
@@ -129,7 +129,7 @@ const GroupAnnouncements = () => {
 
   const handleDeleteReply = async (replyId) => {
     try {
-      await axios.delete(`http://localhost:8000/api/replies/${replyId}`, {
+      await axios.delete(`https://class-plus-final.onrender.com/api/replies/${replyId}`, {
         withCredentials: true,
       });
       fetchAnnouncements(currentPage);
@@ -151,14 +151,14 @@ const GroupAnnouncements = () => {
 
       if (editingAnnouncement) {
         await axios.put(
-          `http://localhost:8000/api/groups/${groupId}/announcements/${editingAnnouncement.id}`,
+          `https://class-plus-final.onrender.com/api/groups/${groupId}/announcements/${editingAnnouncement.id}`,
           payload,
           { withCredentials: true }
         );
         toast.success("Announcement updated successfully");
       } else {
         await axios.post(
-          `http://localhost:8000/api/groups/${groupId}/announcements`,
+          `https://class-plus-final.onrender.com/api/groups/${groupId}/announcements`,
           payload,
           { withCredentials: true }
         );
@@ -177,7 +177,7 @@ const GroupAnnouncements = () => {
     if (window.confirm("Are you sure you want to delete this announcement?")) {
       try {
         await axios.delete(
-          `http://localhost:8000/api/groups/${groupId}/announcements/${id}`,
+          `https://class-plus-final.onrender.com/api/groups/${groupId}/announcements/${id}`,
           {
             withCredentials: true,
           }
@@ -193,7 +193,7 @@ const GroupAnnouncements = () => {
   const handleTogglePin = async (id, currentPinStatus) => {
     try {
       await axios.patch(
-        `http://localhost:8000/api/groups/${groupId}/announcements/${id}/pin`,
+        `https://class-plus-final.onrender.com/api/groups/${groupId}/announcements/${id}/pin`,
         {
           pinStatus: !currentPinStatus,
         },
@@ -213,7 +213,7 @@ const GroupAnnouncements = () => {
   const handleReaction = async (id) => {
     try {
       await axios.post(
-        `http://localhost:8000/api/announcements/${id}/reactions`,
+        `https://class-plus-final.onrender.com/api/announcements/${id}/reactions`,
         {
           reactionType: "LIKE",
         },

@@ -45,7 +45,7 @@ const DisplayGroup = () => {
   const fetchPublicGroups = async () => {
     try {
       const response = await axios.get(
-        "http://localhost:8000/api/groups/public",{
+        "https://class-plus-final.onrender.com/api/groups/public",{
           withCredentials:true
         }
       );
@@ -72,7 +72,7 @@ const DisplayGroup = () => {
   const fetchGroups = async (memberId) => {
     try {
       const response = await axios.get(
-        `http://localhost:8000/api/displaygroups?memberId=${memberId}`
+        `https://class-plus-final.onrender.com/api/displaygroups?memberId=${memberId}`
       );
       const data = response.data.data || [];
       setGroups(Array.isArray(data) ? data : []);
@@ -91,7 +91,7 @@ const DisplayGroup = () => {
     setLoading(true);
     try {
       const response = await axios.post(
-        `http://localhost:8000/api/groups/${groupId}/join`,
+        `https://class-plus-final.onrender.com/api/groups/${groupId}/join`,
         {},
         {
           withCredentials: true,
@@ -118,7 +118,7 @@ const DisplayGroup = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:8000/api/creategroup",
+        "https://class-plus-final.onrender.com/api/creategroup",
         { name, description, visibility },
         { withCredentials: true }
       );
@@ -157,7 +157,7 @@ const DisplayGroup = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:8000/api/join",
+        "https://class-plus-final.onrender.com/api/join",
         { code: joinCode },
         {
           withCredentials: true,
@@ -192,7 +192,7 @@ const DisplayGroup = () => {
     setError(null);
     console.log(groupToDelete);
     try {
-      await axios.delete(`http://localhost:8000/api/group/${groupToDelete}`, {
+      await axios.delete(`https://class-plus-final.onrender.com/api/group/${groupToDelete}`, {
         withCredentials: true,
       });
 

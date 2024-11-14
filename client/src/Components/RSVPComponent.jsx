@@ -17,7 +17,7 @@ const RSVPComponent = ({ sessionId, currentRSVP, onRSVPChange }) => {
   useEffect(() => {
     const fetchRSVP = async () => {
       try {
-        const response = await axios.get(`http://localhost:8000/api/session/${sessionId}/userRSVP`, { withCredentials: true });
+        const response = await axios.get(`https://class-plus-final.onrender.com/api/session/${sessionId}/userRSVP`, { withCredentials: true });
         if (response.data.status) {
           setRsvpStatus(response.data.status); // Update state with fetched status
           onRSVPChange(response.data.status); // Also notify parent of the fetched status
@@ -36,7 +36,7 @@ const RSVPComponent = ({ sessionId, currentRSVP, onRSVPChange }) => {
 
     try {
       const response = await axios.post(
-        `http://localhost:8000/api/session/${sessionId}/rsvp`,
+        `https://class-plus-final.onrender.com/api/session/${sessionId}/rsvp`,
         { status: newStatus },
         { withCredentials: true }
       );

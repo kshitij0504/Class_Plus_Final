@@ -55,7 +55,7 @@ const ModernChat = () => {
     const fetchGroupAndMessages = async () => {
       try {
         const groupResponse = await axios.get(
-          `http://localhost:8000/api/groups/${id}`,
+          `https://class-plus-final.onrender.com/api/groups/${id}`,
           {
             withCredentials: true,
           }
@@ -63,7 +63,7 @@ const ModernChat = () => {
         setGroup(groupResponse.data.data);
 
         const messagesResponse = await axios.get(
-          `http://localhost:8000/api/${id}/getmessage`,
+          `https://class-plus-final.onrender.com/api/${id}/getmessage`,
           {
             withCredentials: true,
           }
@@ -81,7 +81,7 @@ const ModernChat = () => {
 
   useEffect(() => {
     // Initialize socket connection
-    socketRef.current = io("http://localhost:8000/chat", {
+    socketRef.current = io("https://class-plus-final.onrender.com/chat", {
       auth: { token: token },
     });
   
@@ -159,7 +159,7 @@ const ModernChat = () => {
       });
 
       await axios.post(
-        `http://localhost:8000/api/${id}/messages`,
+        `https://class-plus-final.onrender.com/api/${id}/messages`,
         { content: newMessage },
         { withCredentials: true }
       );
@@ -212,7 +212,7 @@ const ModernChat = () => {
       });
 
       await axios.post(
-        `http://localhost:8000/api/${id}/messages`,
+        `https://class-plus-final.onrender.com/api/${id}/messages`,
         { 
           content: "",
           fileUrl,
@@ -285,8 +285,8 @@ const ModernChat = () => {
     try {
       const endpoint =
         deleteType === "everyone"
-          ? "http://localhost:8000/api/message/deleteMultipleforeveryone"
-          : "http://localhost:8000/api/message/deleteMultipleForSelf";
+          ? "https://class-plus-final.onrender.com/api/message/deleteMultipleforeveryone"
+          : "https://class-plus-final.onrender.com/api/message/deleteMultipleForSelf";
 
       const response = await fetch(endpoint, {
         method: "DELETE",

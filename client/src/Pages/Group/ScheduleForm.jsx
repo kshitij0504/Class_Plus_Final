@@ -26,7 +26,7 @@ const ScheduleForm = ({ onClose, groupId, handleAddEvent }) => {
 
     try {
       const response = await fetch(
-        `http://localhost:8000/api/groups/${groupId}/events`,
+        `https://class-plus-final.onrender.com/api/groups/${groupId}/events`,
         {
           method: "POST",
           credentials: "include",

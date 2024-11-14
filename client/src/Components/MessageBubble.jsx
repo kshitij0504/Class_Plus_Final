@@ -46,8 +46,8 @@ const MessageBubble = ({
     try {
       setIsDeleting(true);
       const endpoint = deleteType === "everyone"
-        ? `http://localhost:8000/api/${message.id}/deleteForEveryone`
-        : `http://localhost:8000/api/${message.id}/deleteForSelf`;
+        ? `https://class-plus-final.onrender.com/api/${message.id}/deleteForEveryone`
+        : `https://class-plus-final.onrender.com/api/${message.id}/deleteForSelf`;
 
       const response = await fetch(endpoint, {
         method: "DELETE",

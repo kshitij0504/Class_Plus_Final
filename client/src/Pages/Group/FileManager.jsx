@@ -150,7 +150,7 @@ const FileManager = () => {
   const fetchFolderContents = async (folderId) => {
     try {
       const response = await axios.get(
-        `http://localhost:8000/api/${groupId}/${folderId || "root"}`
+        `https://class-plus-final.onrender.com/api/${groupId}/${folderId || "root"}`
       );
       setFolders(response.data.folders);
       setFiles(response.data.files);
@@ -191,7 +191,7 @@ const FileManager = () => {
             createdBy: currentUser.id,
           };
 
-          await axios.post("http://localhost:8000/api/upload", fileData);
+          await axios.post("https://class-plus-final.onrender.com/api/upload", fileData);
         }
 
         fetchFolderContents(currentFolderId);
@@ -270,7 +270,7 @@ const FileManager = () => {
         };
 
         // Save file metadata to backend
-        await axios.post("http://localhost:8000/api/upload", fileData);
+        await axios.post("https://class-plus-final.onrender.com/api/upload", fileData);
       }
 
       fetchFolderContents(currentFolderId);
@@ -294,7 +294,7 @@ const FileManager = () => {
 
     try {
       console.log("Creating folder:", newFolderName); // Debugging line
-      const response = await axios.post("http://localhost:8000/api/create", {
+      const response = await axios.post("https://class-plus-final.onrender.com/api/create", {
         groupId,
         name: newFolderName,
         parentId: currentFolderId,
@@ -322,7 +322,7 @@ const FileManager = () => {
 
   const handleDeleteFile = async (fileId) => {
     try {
-      await axios.delete(`http://localhost:8000/api/files/delete/${fileId}`);
+      await axios.delete(`https://class-plus-final.onrender.com/api/files/delete/${fileId}`);
       fetchFolderContents(currentFolderId);
       toast({
         title: "Success",
@@ -339,7 +339,7 @@ const FileManager = () => {
 
   const handleDeleteFolder = async (folderId) => {
     try {
-      await axios.delete(`http://localhost:8000/api/delete/${folderId}`);
+      await axios.delete(`https://class-plus-final.onrender.com/api/delete/${folderId}`);
       toast({
         title: "Success",
         description: "Folder Deleted Successfully",

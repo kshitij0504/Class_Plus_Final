@@ -40,7 +40,7 @@ const Otp = () => {
     const otpCode = otp.join("");
 
     try {
-      const response = await axios.post("http://localhost:8000/api/verify-otp", { email, otp: otpCode });
+      const response = await axios.post("https://class-plus-final.onrender.com/api/verify-otp", { email, otp: otpCode });
       toast.success(response.data.message);
       if (response.status === 200) {
         navigate("/signin");

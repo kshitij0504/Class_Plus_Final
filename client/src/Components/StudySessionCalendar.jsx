@@ -62,7 +62,7 @@ const StudySessionCalendar = ({ events, onRSVPUpdate }) => {
 
     try {
       const response = await axios.post(
-        `http://localhost:8000/api/sessions/${selectedEvent.id}/rsvp`,
+        `https://class-plus-final.onrender.com/api/sessions/${selectedEvent.id}/rsvp`,
         { rsvpStatus: newStatus },
         { withCredentials: true }
       );

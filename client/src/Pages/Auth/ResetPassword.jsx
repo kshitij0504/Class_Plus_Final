@@ -35,7 +35,7 @@ const ResetPassword = () => {
     }
 
     try {
-      const response = await axios.post("http://localhost:8000/api/reset-password", { 
+      const response = await axios.post("https://class-plus-final.onrender.com/api/reset-password", { 
         token, 
         newPassword 
       });

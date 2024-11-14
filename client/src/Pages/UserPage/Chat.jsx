@@ -59,7 +59,7 @@ const ChatInterface = () => {
 
   useEffect(() => {
     if (token && !socket) {
-      const newSocket = io("http://localhost:8000/onetoone", {
+      const newSocket = io("https://class-plus-final.onrender.com/onetoone", {
         auth: { token },
         reconnection: true,
         reconnectionAttempts: 5,
@@ -190,7 +190,7 @@ const ChatInterface = () => {
     if (!checkAuthentication()) return;
 
     try {
-      const response = await axios.get("http://localhost:8000/api/friends", {
+      const response = await axios.get("https://class-plus-final.onrender.com/api/friends", {
         withCredentials: true,
       });
       console.log(response.data);
@@ -213,7 +213,7 @@ const ChatInterface = () => {
     }
 
     try {
-      const response = await axios.get(`http://localhost:8000/api/search`, {
+      const response = await axios.get(`https://class-plus-final.onrender.com/api/search`, {
         withCredentials: true,
         params: { username: query },
       });
@@ -244,7 +244,7 @@ const ChatInterface = () => {
 
     try {
       await axios.post(
-        "http://localhost:8000/api/friendship",
+        "https://class-plus-final.onrender.com/api/friendship",
         { friendId },
         {
           withCredentials: true,
@@ -270,7 +270,7 @@ const ChatInterface = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:8000/api/start-chat",
+        "https://class-plus-final.onrender.com/api/start-chat",
         { friendId },
         {
           withCredentials: true,
@@ -295,7 +295,7 @@ const ChatInterface = () => {
 
     try {
       const response = await axios.get(
-        `http://localhost:8000/api/chatroom/${chatRoomId}/tempmessages`,
+        `https://class-plus-final.onrender.com/api/chatroom/${chatRoomId}/tempmessages`,
         { withCredentials: true }
       );
 
@@ -336,7 +336,7 @@ const ChatInterface = () => {
       socket.emit("send_message", messageData);
 
       // Save to database
-      await axios.post("http://localhost:8000/api/send-message", messageData, {
+      await axios.post("https://class-plus-final.onrender.com/api/send-message", messageData, {
         withCredentials: true,
       });
 
