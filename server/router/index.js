@@ -18,6 +18,8 @@ const {
   addMemberToGroup,
   deleteGroup,
   joinUsingCode,
+  getPublicGroups,
+  joinGroup,
 } = require("../Controller/group.controller");
 const notification = require("../Controller/notification.controller");
 const {
@@ -93,6 +95,10 @@ router.post("/creategroup", getUserDetailstoken, createGroup);
 router.post("/join", getUserDetailstoken, joinUsingCode);
 
 router.get("/displaygroups", getGroups);
+
+router.get('/groups/public', getUserDetailstoken, getPublicGroups);
+
+router.post('/groups/:groupId/join', getUserDetailstoken, joinGroup);
 
 router.post("/groups/:groupId/add-member", addMemberToGroup);
 

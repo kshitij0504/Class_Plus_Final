@@ -20,6 +20,7 @@ import { Avatar } from "flowbite-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useSelector } from "react-redux";
 import axios from "axios";
+import VoiceChatWithWaveform from "./VoiceRecorder";
 
 const ChatInterface = () => {
   const { currentUser, token } = useSelector((state) => ({
@@ -446,24 +447,25 @@ const ChatInterface = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-900">
-      {/* Mobile Menu Button */}
+    <div className="flex h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 font-[Poppins]">
+      {/* Mobile Menu Button with animation */}
       <button
         onClick={toggleMobileMenu}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-gray-800 text-gray-200"
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-gray-800/90 text-gray-200 hover:bg-gray-700/90 transition-all duration-300 hover:scale-105"
       >
         {isMobileMenuOpen ? (
-          <X className="h-6 w-6" />
+          <X className="h-6 w-6 animate-in" />
         ) : (
-          <Menu className="h-6 w-6" />
+          <Menu className="h-6 w-6 animate-in" />
         )}
       </button>
 
-      {/* Enhanced Sidebar with mobile responsiveness */}
+      {/* Enhanced Sidebar */}
       <div
         className={`
-          fixed lg:relative w-80 bg-gray-800/95 border-r border-gray-700/80 backdrop-blur-sm
-          transition-transform duration-300 ease-in-out z-40 h-full
+          fixed lg:relative w-80 bg-gray-800/95 backdrop-blur-md
+          border-r border-gray-700/80 transition-all duration-300 ease-out
+          z-40 h-full shadow-2xl shadow-black/20
           ${
             isMobileMenuOpen
               ? "translate-x-0"
@@ -473,33 +475,31 @@ const ChatInterface = () => {
       >
         <div className="p-4 h-full overflow-y-auto">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
               Messages
             </h2>
-            <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-gray-300 hover:text-blue-400 hover:bg-gray-700/70 transition-all duration-200"
-                onClick={() => {
-                  setView(view === "chat" ? "search" : "chat");
-                  setIsMobileMenuOpen(false);
-                }}
-              >
-                {view === "chat" ? (
-                  <UserPlus className="h-5 w-5" />
-                ) : (
-                  <ArrowLeft className="h-5 w-5" />
-                )}
-              </Button>
-            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-gray-300 hover:text-blue-400 hover:bg-gray-700/70 transition-all duration-300 hover:scale-110"
+              onClick={() => {
+                setView(view === "chat" ? "search" : "chat");
+                setIsMobileMenuOpen(false);
+              }}
+            >
+              {view === "chat" ? (
+                <UserPlus className="h-5 w-5" />
+              ) : (
+                <ArrowLeft className="h-5 w-5" />
+              )}
+            </Button>
           </div>
 
-          {/* Status Messages */}
+          {/* Status Messages with enhanced styling */}
           {error && (
             <Alert
               variant="destructive"
-              className="mb-4 bg-red-500/10 border-red-500/20 backdrop-blur-sm"
+              className="mb-4 bg-red-500/10 border-red-500/20 backdrop-blur-sm animate-in slide-in-from-top duration-300"
             >
               <AlertDescription className="text-red-200">
                 {error}
@@ -507,18 +507,18 @@ const ChatInterface = () => {
             </Alert>
           )}
           {success && (
-            <Alert className="mb-4 bg-emerald-500/10 border-emerald-500/20 backdrop-blur-sm">
+            <Alert className="mb-4 bg-emerald-500/10 border-emerald-500/20 backdrop-blur-sm animate-in slide-in-from-top duration-300">
               <AlertDescription className="text-emerald-200">
                 {success}
               </AlertDescription>
             </Alert>
           )}
 
-          {/* Friends List / Search View */}
+          {/* Enhanced Friends List / Search View */}
           {view === "chat" ? (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {friends.length > 0 ? (
-                friends.map((friend,index) => (
+                friends.map((friend, index) => (
                   <div
                     key={friend.id}
                     onClick={() => {
@@ -527,18 +527,23 @@ const ChatInterface = () => {
                       setIsMobileMenuOpen(false);
                     }}
                     className={`
-                        flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200
-                        hover:scale-[1.02]
-                        ${
-                          selectedFriend?.id === friend.id
-                            ? "bg-blue-600/20 border border-blue-500/30 shadow-lg shadow-blue-500/10"
-                            : "hover:bg-gray-700/50 border border-transparent hover:border-gray-600/50"
-                        }
-                      `}
+                      flex items-center p-3 rounded-xl cursor-pointer
+                      transition-all duration-300 hover:scale-[1.02]
+                      ${
+                        selectedFriend?.id === friend.id
+                          ? "bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 shadow-lg shadow-blue-500/10"
+                          : "hover:bg-gray-700/50 border border-transparent hover:border-gray-600/50"
+                      }
+                    `}
                   >
                     <div className="relative">
-                      <Avatar img={friend.avatar} alt="" rounded />
-                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-800" />
+                      <Avatar
+                        img={friend.avatar}
+                        alt=""
+                        rounded
+                        className="ring-2 ring-offset-2 ring-offset-gray-800 ring-blue-500/50"
+                      />
+                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-800 animate-pulse" />
                     </div>
                     <div className="ml-3">
                       <p className="font-medium text-gray-200">
@@ -546,12 +551,15 @@ const ChatInterface = () => {
                       </p>
                       <p className="text-xs text-gray-400">Online</p>
                     </div>
+                    {index < friends.length - 1 && (
+                      <div className="h-[1px] bg-gradient-to-r from-transparent via-gray-700/50 to-transparent mx-4" />
+                    )}
                   </div>
                 ))
               ) : (
                 <div className="text-center py-12 px-4">
-                  <div className="bg-gray-700/30 p-6 rounded-xl border border-gray-600/30">
-                    <MessageCircle className="h-12 w-12 mx-auto text-blue-400 mb-4" />
+                  <div className="bg-gradient-to-br from-gray-700/30 to-gray-800/30 p-8 rounded-2xl border border-gray-600/30 backdrop-blur-sm">
+                    <MessageCircle className="h-12 w-12 mx-auto text-blue-400 mb-4 animate-bounce" />
                     <h3 className="font-medium text-gray-200 text-lg">
                       No conversations yet
                     </h3>
@@ -560,7 +568,7 @@ const ChatInterface = () => {
                     </p>
                     <Button
                       onClick={() => setView("search")}
-                      className="mt-4 bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-200"
+                      className="mt-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white transition-all duration-300 hover:scale-105"
                     >
                       <UserPlus className="h-4 w-4 mr-2" />
                       Add Friends
@@ -577,26 +585,31 @@ const ChatInterface = () => {
                   placeholder="Search users..."
                   value={searchQuery}
                   onChange={(e) => handleSearchInput(e.target.value)}
-                  className="pl-10 bg-gray-700/50 border-gray-600/50 text-gray-200 placeholder-gray-400 focus:border-blue-500/50 focus:ring-blue-500/20"
+                  className="pl-10 bg-gray-700/50 border-gray-600/50 text-gray-200 placeholder-gray-400 focus:border-blue-500/50 focus:ring-blue-500/20 rounded-xl transition-all duration-300"
                 />
                 <Search className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {searchResults.map((user) => (
                   <div
                     key={user.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-gray-700/30 border border-gray-600/30 hover:border-blue-500/30 transition-all duration-200"
+                    className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-gray-700/30 to-gray-800/30 border border-gray-600/30 hover:border-blue-500/30 transition-all duration-300 hover:scale-[1.02]"
                   >
                     <div className="flex items-center">
-                      <Avatar img={user.avatar} alt="" rounded />
+                      <Avatar
+                        img={user.avatar}
+                        alt=""
+                        rounded
+                        className="ring-2 ring-offset-2 ring-offset-gray-800 ring-purple-500/50"
+                      />
                       <p className="ml-3 font-medium text-gray-200">
                         {user.username}
                       </p>
                     </div>
                     <Button
                       size="sm"
-                      className="bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-200"
+                      className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white transition-all duration-300 hover:scale-105"
                       onClick={() => addFriend(user.id)}
                     >
                       Add
@@ -610,14 +623,19 @@ const ChatInterface = () => {
       </div>
 
       {/* Enhanced Chat Area */}
-      <div className="flex-1 flex flex-col bg-gray-900">
+      <div className="flex-1 flex flex-col bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
         {selectedFriend ? (
           <>
-            <div className="bg-gray-800/95 border-b border-gray-700/80 p-4 backdrop-blur-sm">
+            <div className="bg-gray-800/95 border-b border-gray-700/80 p-4 backdrop-blur-md">
               <div className="flex items-center">
                 <div className="relative">
-                  <Avatar img={selectedFriend.avatar} alt="" rounded />
-                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-800" />
+                  <Avatar
+                    img={selectedFriend.avatar}
+                    alt=""
+                    rounded
+                    className="ring-2 ring-offset-2 ring-offset-gray-800 ring-blue-500/50"
+                  />
+                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-800 animate-pulse" />
                 </div>
                 <div className="ml-3">
                   <h3 className="font-medium text-gray-200">
@@ -633,7 +651,10 @@ const ChatInterface = () => {
                       </span>
                     </p>
                   ) : (
-                    <p className="text-sm text-gray-400">Active now</p>
+                    <p className="text-sm text-gray-400 flex items-center">
+                      <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse" />
+                      Active now
+                    </p>
                   )}
                 </div>
               </div>
@@ -645,13 +666,80 @@ const ChatInterface = () => {
                   <Loader2 className="h-8 w-8 text-blue-400 animate-spin" />
                 </div>
               ) : messages.length > 0 ? (
-                messages.map((message, index) =>
-                  renderMessage(message, index, messages)
-                )
+                messages.map((message, index, messages) => {
+                  const isFirstInGroup =
+                    index === 0 ||
+                    messages[index - 1].senderId !== message.senderId;
+                  const isLastInGroup =
+                    index === messages.length - 1 ||
+                    messages[index + 1].senderId !== message.senderId;
+
+                  return (
+                    <div
+                      key={index}
+                      className={`
+                        ${!isFirstInGroup ? "mt-1" : "mt-6"}
+                        ${
+                          message.senderId === currentUser.id
+                            ? "flex-row-reverse"
+                            : "flex-row"
+                        }
+                        flex items-end gap-2 animate-in slide-in-from-bottom duration-300
+                      `}
+                    >
+                      {isLastInGroup && (
+                        <Avatar
+                          img={
+                            message.senderId === currentUser.id
+                              ? currentUser.avatar
+                              : selectedFriend.avatar
+                          }
+                          alt=""
+                          rounded
+                          className="w-8 h-8 ring-2 ring-offset-2 ring-offset-gray-900 ring-blue-500/50"
+                        />
+                      )}
+                      {!isLastInGroup && <div className="w-8" />}
+                      <div
+                        className={`
+                          max-w-[70%] p-3 shadow-lg
+                          ${
+                            message.senderId === currentUser.id
+                              ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl rounded-br-none"
+                              : "bg-gradient-to-r from-gray-700 to-gray-800 text-gray-200 rounded-2xl rounded-bl-none"
+                          }
+                          ${
+                            !isLastInGroup &&
+                            message.senderId === currentUser.id
+                              ? "rounded-br-2xl mr-10"
+                              : ""
+                          }
+                          ${
+                            !isLastInGroup &&
+                            message.senderId !== currentUser.id
+                              ? "rounded-bl-2xl ml-10"
+                              : ""
+                          }
+                          hover:scale-[1.02] transition-all duration-300
+                        `}
+                      >
+                        <p className="text-sm">{message.content}</p>
+                        <div className="flex items-center justify-end mt-1 space-x-1">
+                          <span className="text-xs opacity-70">
+                            {formatMessageTime(message.sentAt)}
+                          </span>
+                          {message.senderId === currentUser.id && (
+                            <CheckCircle2 className="h-3 w-3 opacity-70" />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
               ) : (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
-                    <MessageCircle className="h-12 w-12 mx-auto text-blue-400 mb-4" />
+                    <MessageCircle className="h-12 w-12 mx-auto text-blue-400 mb-4 animate-bounce" />
                     <h3 className="text-lg font-medium text-gray-300">
                       No messages yet
                     </h3>
@@ -664,7 +752,7 @@ const ChatInterface = () => {
               <div ref={messagesEndRef} />
             </div>
 
-            <div className="bg-gray-800/95 border-t border-gray-700/80 p-4 backdrop-blur-sm">
+            <div className="bg-gray-800/95 border-t border-gray-700/80 p-4 backdrop-blur-md">
               <form onSubmit={sendMessage} className="flex items-center gap-2">
                 <Input
                   type="text"
@@ -684,6 +772,7 @@ const ChatInterface = () => {
                 >
                   <Send className="h-4 w-4" />
                 </Button>
+                {/* <VoiceChatWithWaveform socket={socket} /> */}
               </form>
             </div>
           </>

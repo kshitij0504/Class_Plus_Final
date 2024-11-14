@@ -418,12 +418,13 @@ async function signOut(req, res) {
 
 async function forgotPassword(req, res) {
   const { email } = req.body;
-
+  console.log(email);
   try {
     // Step 1: Check if the user exists
     const user = await prisma.user.findUnique({
       where: { email },
     });
+    console.log(user);
 
     if (!user) {
       return res.status(400).json({ message: "User not found" });
@@ -433,15 +434,33 @@ async function forgotPassword(req, res) {
     const resetToken = jwt.sign({ email: user.email }, process.env.JWT_SECRET_KEY, {
       expiresIn: "1h", // Token expires in 1 hour
     });
+    console.log(resetToken);
 
-    // Step 3: Store the reset token in the database (optional, if you want to keep track)
-    await prisma.passwordReset.create({
-      data: {
-        userID: user.id,
-        resetToken,
-        expiresAt: new Date(Date.now() + 3600000), // Expiry time (1 hour)
-      },
+    // Step 3: Store or update the reset token in the database
+    const existingReset = await prisma.passwordReset.findUnique({
+      where: { userID: user.id },
     });
+
+    if (existingReset) {
+      // Update the existing reset token and expiry time
+      await prisma.passwordReset.update({
+        where: { userID: user.id },
+        data: {
+          resetToken,
+          expiresAt: new Date(Date.now() + 3600000), // Expiry time (1 hour)
+        },
+      });
+    } else {
+      // Create a new password reset entry
+      await prisma.passwordReset.create({
+        data: {
+          userID: user.id,
+          resetToken,
+          expiresAt: new Date(Date.now() + 3600000), // Expiry time (1 hour)
+        },
+      });
+    }
+    console.log("done");
 
     // Step 4: Send the reset password email
     const resetPasswordUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
@@ -451,7 +470,7 @@ async function forgotPassword(req, res) {
       secure: true,
       auth: {
         user: "mozakshitij@gmail.com",
-        pass: "nlni qcfk mjur qloa",
+        pass: "nlni qcfk mjur qloa", // Use environment variable for security
       },
     });
 

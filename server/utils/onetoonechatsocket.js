@@ -82,17 +82,27 @@ const handleOnetoOneChatSocket = (io) => {
 
     // Voice message handler
     socket.on("send_voice_message", async (data) => {
-      const { chatRoomId, audioBuffer, duration } = data;
+      const { chatRoomId, audioUrl, duration } = data;
       try {
         const message = {
           chatRoomId,
-          audioBuffer, // The recorded audio data
+          audioUrl, // Use URL for the recorded audio data
           senderId: userId,
           sentAt: new Date(),
           duration,    // Optional duration of the audio
           status: "sent"
         };
-
+    
+        // Save to database if needed
+        await prisma.messageOneToOne.create({
+          data: {
+            chatRoomId,
+            senderId: userId,
+            audioUrl,
+            sentAt: new Date(),
+          },
+        });
+    
         // Broadcast to room
         onetooneIo.to(`room_${chatRoomId}`).emit("new_voice_message", message);
       } catch (error) {
@@ -100,6 +110,7 @@ const handleOnetoOneChatSocket = (io) => {
         socket.emit("error", { message: "Failed to send voice message" });
       }
     });
+    
 
     // Typing indicators
     socket.on("typing", ({ chatRoomId }) => {

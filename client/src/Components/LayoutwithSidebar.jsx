@@ -8,7 +8,8 @@ import {
 } from "lucide-react";
 import { RxUpdate } from "react-icons/rx";
 import { Outlet } from "react-router-dom";
-import { IoIosNotifications } from "react-icons/io";
+import { IoChatbubblesOutline } from "react-icons/io5";
+import { IoIosNotificationsOutline } from "react-icons/io";
 const LayoutwithSidebar = () => {
   return (
     <div className="flex bg-gray-900 text-white">
@@ -35,9 +36,14 @@ const LayoutwithSidebar = () => {
           to="/session"
         />
         <SidebarItem
-          icon={<IoIosNotifications size={20} />}
+          icon={<IoIosNotificationsOutline size={20} />}
           text="Notification"
           to="/notification"
+        />
+        <SidebarItem
+          icon={<IoChatbubblesOutline size={20} />}
+          text="Chat"
+          to="/chat"
         />
       </Sidebar>
       <div className="flex-1">

@@ -28,7 +28,7 @@ const LandingPage = () => {
   const [isTestimonialExpanded, setTestimonialExpanded] = useState({});
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-gray-900 custom-scrollbar">
       <Navigation />
       <HeroSection />
       <FeatureGrid />

@@ -30,6 +30,9 @@ import MembersDrawer from "@/Components/MembersDrawer";
 import { GrAnnounce } from "react-icons/gr";
 import { FaNoteSticky } from "react-icons/fa6";
 import { Presentation } from "lucide-react";
+import { FaFile } from "react-icons/fa";
+import { FaTowerBroadcast } from "react-icons/fa6";
+import { PiPresentationFill } from "react-icons/pi";
 
 const GroupDetail = () => {
   const { currentUser } = useSelector((state) => state.user || {});
@@ -486,7 +489,7 @@ const SidebarComponent = ({
       />
       <SidebarItem
         to={`/group/${id}/announcement`}
-        icon={GrAnnounce}
+        icon={FaTowerBroadcast}
         text="Announcement"
         onClick={() => onClose && onClose()}
         state={ isLeader}
@@ -499,13 +502,13 @@ const SidebarComponent = ({
       />
       <SidebarItem
         to={`/groups/${id}/filesection`}
-        icon={LuFiles}
+        icon={FaFile}
         text="Files"
         onClick={() => onClose && onClose()}
       />
       <SidebarItem
         to={`/meeting-list/${id}`}
-        icon={Presentation}
+        icon={PiPresentationFill}
         text="Previous Meetings"
         onClick={() => onClose && onClose()}
       />

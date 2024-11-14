@@ -2,8 +2,7 @@ const prisma = require("../config/connectDb");
 const notification = require("../Controller/notification.controller");
 
 function generateJoinCode(length = 6) {
-  const characters =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let joinCode = "";
   for (let i = 0; i < length; i++) {
     const randomIndex = Math.floor(Math.random() * characters.length);
@@ -13,31 +12,30 @@ function generateJoinCode(length = 6) {
 }
 
 async function createGroup(req, res) {
-  const { name, description } = req.body;
+  const { name, description, visibility = "PRIVATE" } = req.body;
   const leaderId = req.user.id;
 
   if (!name || typeof name !== "string" || name.trim() === "") {
-    return res
-      .status(400)
-      .json({ error: "Group name is required and must be a non-empty string" });
+    return res.status(400).json({ error: "Group name is required and must be a non-empty string" });
   }
 
   if (name.length > 50) {
-    return res
-      .status(400)
-      .json({ error: "Group name cannot exceed 50 characters" });
+    return res.status(400).json({ error: "Group name cannot exceed 50 characters" });
   }
 
   if (description && description.length > 200) {
-    return res
-      .status(400)
-      .json({ error: "Description cannot exceed 200 characters" });
+    return res.status(400).json({ error: "Description cannot exceed 200 characters" });
+  }
+
+  if (!["PUBLIC", "PRIVATE"].includes(visibility)) {
+    return res.status(400).json({ error: "Visibility must be either PUBLIC or PRIVATE" });
   }
 
   try {
     const leaderExists = await prisma.user.findUnique({
       where: { id: leaderId },
     });
+    
     if (!leaderExists) {
       return res.status(404).json({ error: "Leader not found" });
     }
@@ -50,6 +48,7 @@ async function createGroup(req, res) {
         description: description?.trim() || null,
         leaderId,
         joinCode,
+        visibility,
         members: {
           connect: { id: leaderId },
         },
@@ -63,6 +62,67 @@ async function createGroup(req, res) {
   } catch (error) {
     console.error("Error creating group:", error);
     res.status(500).json({ error: "Failed to create group" });
+  }
+}
+
+async function joinGroup(req, res) {
+  const { groupId } = req.params;
+  const userId = req.user.id;
+
+  if (!Number.isInteger(parseInt(groupId))) {
+    return res.status(400).json({ error: "Invalid group ID" });
+  }
+
+  try {
+    const group = await prisma.group.findUnique({
+      where: { id: parseInt(groupId) },
+      include: { members: true },
+    });
+
+    if (!group) {
+      return res.status(404).json({ error: "Group not found" });
+    }
+
+    // Check if user is already a member
+    const isMember = group.members.some(member => member.id === userId);
+    if (isMember) {
+      return res.status(400).json({ error: "You are already a member of this group" });
+    }
+
+    // Check if group is private
+    if (group.visibility === "PRIVATE") {
+      return res.status(403).json({ error: "This is a private group. Please use a join code to join." });
+    }
+
+    // Add user to the public group
+    const updatedGroup = await prisma.group.update({
+      where: { id: parseInt(groupId) },
+      data: {
+        members: {
+          connect: { id: userId },
+        },
+      },
+      include: {
+        leader: true,
+        members: true,
+      },
+    });
+
+    // Create notification for group leader
+    await prisma.notification.create({
+      data: {
+        userId: group.leaderId,
+        message: `A new member has joined your group ${group.name}.`,
+      },
+    });
+
+    res.status(200).json({
+      message: "Successfully joined the group",
+      data: updatedGroup,
+    });
+  } catch (error) {
+    console.error("Error joining group:", error);
+    res.status(500).json({ error: "Failed to join group" });
   }
 }
 
@@ -84,46 +144,16 @@ async function joinUsingCode(req, res) {
       return res.status(404).json({ message: "Invalid Code" });
     }
 
-    const isMember = group.members.some((member) => member.id === userId);
+    const isMember = group.members.some(member => member.id === userId);
     if (isMember) {
-      return res
-        .status(400)
-        .json({ error: "You are already a member of this group" });
+      return res.status(400).json({ error: "You are already a member of this group" });
     }
 
-    await prisma.group.update({
+    const updatedGroup = await prisma.group.update({
       where: { id: group.id },
       data: {
         members: {
           connect: { id: userId },
-        },
-      },
-    });
-
-    res.status(200).json({
-      message: `Joined '${group.name}' successfully`,
-      data: group,
-    });
-  } catch (error) {
-    console.error("Error joining group:", error);
-    res.status(500).json({ error: "Failed to join group" });
-  }
-}
-
-async function getGroups(req, res) {
-  const memberId = parseInt(req.query.memberId);
-
-  if (!memberId) {
-    return res.status(400).json({ error: "Member ID is required" });
-  }
-
-  try {
-    const groups = await prisma.group.findMany({
-      where: {
-        members: {
-          some: {
-            id: memberId,
-          },
         },
       },
       include: {
@@ -132,14 +162,85 @@ async function getGroups(req, res) {
       },
     });
 
+    // Create notification for group leader
+    await prisma.notification.create({
+      data: {
+        userId: group.leaderId,
+        message: `A new member has joined your group ${group.name} using the join code.`,
+      },
+    });
+
+    res.status(200).json({
+      message: `Joined '${group.name}' successfully`,
+      data: updatedGroup,
+    });
+  } catch (error) {
+    console.error("Error joining group:", error);
+    res.status(500).json({ error: "Failed to join group" });
+  }
+}
+
+async function getPublicGroups(req, res) {
+  try {
+    const publicGroups = await prisma.group.findMany({
+      where: {
+        visibility: "PUBLIC",
+      },
+      include: {
+        leader: true,
+        members: true,
+      },
+    });
+
+    res.status(200).json({
+      message: "Public groups retrieved successfully",
+      data: publicGroups,
+    });
+  } catch (error) {
+    console.error("Error retrieving public groups:", error);
+    res.status(500).json({ error: "Failed to retrieve public groups" });
+  }
+}
+
+// Update existing getGroups function to handle visibility filter
+async function getGroups(req, res) {
+  const memberId = parseInt(req.query.memberId);
+  const visibility = req.query.visibility;
+
+  if (!memberId) {
+    return res.status(400).json({ error: "Member ID is required" });
+  }
+
+  try {
+    const whereClause = {
+      members: {
+        some: {
+          id: memberId,
+        },
+      },
+    };
+
+    if (visibility) {
+      if (!["PUBLIC", "PRIVATE"].includes(visibility)) {
+        return res.status(400).json({ error: "Invalid visibility filter" });
+      }
+      whereClause.visibility = visibility;
+    }
+
+    const groups = await prisma.group.findMany({
+      where: whereClause,
+      include: {
+        leader: true,
+        members: true,
+      },
+    });
+
     if (groups.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "No groups found for this member" });
+      return res.status(404).json({ message: "No groups found for this member" });
     }
 
     res.status(200).json({
-      message: "Groups with members retrieved successfully",
+      message: "Groups retrieved successfully",
       data: groups,
     });
   } catch (error) {
@@ -322,6 +423,8 @@ async function deleteGroup(req, res) {
 module.exports = {
   createGroup,
   getGroups,
+  getPublicGroups,
+  joinGroup,
   getparticularGroup,
   addMemberToGroup,
   joinUsingCode,

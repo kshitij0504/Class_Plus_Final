@@ -53,22 +53,28 @@ model UserVerification {
 }
 
 model Group {
-  id            Int            @id @default(autoincrement())
+  id            Int             @id @default(autoincrement())
   name          String
   description   String?
   leaderId      Int
-  leader        User           @relation("GroupLeaders", fields: [leaderId], references: [id])
-  members       User[]         @relation("GroupMembers")
-  joinCode      String         @unique
-  createdAt     DateTime       @default(now())
-  messages      Message[]      @relation("GroupMessages")
+  leader        User            @relation("GroupLeaders", fields: [leaderId], references: [id])
+  members       User[]          @relation("GroupMembers")
+  joinCode      String          @unique
+  createdAt     DateTime        @default(now())
+  visibility    GroupVisibility @default(PRIVATE)
+  messages      Message[]       @relation("GroupMessages")
   folders       Folder[]
   files         File[]
   note          Note[]
   sessions      Session[]
   meetings      Meeting[]
-  Meeting       Meeting[]      @relation("MeetingGroup")
+  Meeting       Meeting[]       @relation("MeetingGroup")
   announcements Announcement[]
+}
+
+enum GroupVisibility {
+  PUBLIC
+  PRIVATE
 }
 
 model Notification {
@@ -314,9 +320,11 @@ model MessageOneToOne {
   chatRoomId Int
   sender     User     @relation(fields: [senderId], references: [id])
   senderId   Int
-  content    String
+  content    String?
+  audioUrl   String?  // New field for audio message URL
   sentAt     DateTime @default(now())
 }
+
 
 model PasswordReset {
   id         Int      @id @default(autoincrement())
