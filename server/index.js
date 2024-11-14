@@ -25,11 +25,9 @@ const handleChatSocket = require("./utils/chatSocket");
 const handleMeetingSocket = require("./utils/meetingSocket");
 const handleOnetoOneChatSocket = require("./utils/onetoonechatsocket");
 
+// Middleware setup
 app.use(cookieParser());
-app.use(cors({
-  origin: "https://classplus.vercel.app", // Make sure this matches your frontend URL exactly
-  credentials: true, // Allow sending cookies across origins
-}));
+app.use(cors({ origin: "https://classplus.vercel.app",credentials: true }));
 app.use(express.json());
 
 app.use((req, res, next) => {
