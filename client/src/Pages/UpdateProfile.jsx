@@ -92,7 +92,7 @@ const UpdateProfile = () => {
 
     try {
       dispatch(updateStart());
-      const URL = `http://localhost:8000/api/update/${currentUser.id}`;
+      const URL = `https://class-plus-final.onrender.com/api/update/${currentUser.id}`;
       const response = await axios.put(URL, formData, {
         withCredentials: true,
       });
