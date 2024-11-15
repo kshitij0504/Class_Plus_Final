@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useParams } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import axios from 'axios';
 
 const formatDate = (dateString) => {
   const date = new Date(dateString);
@@ -110,8 +111,8 @@ const PreviousMeetings = () => {
   useEffect(() => {
     const fetchMeetings = async () => {
       try {
-        const response = await fetch(`https://class-plus-final.onrender.com/api/group/meetings/${groupId}`, {
-          credentials: 'include'
+        const response = await axios.get(`https://class-plus-final.onrender.com/api/group/meetings/${groupId}`, {
+          withCredentials:true
         });
         
         if (!response.ok) {
