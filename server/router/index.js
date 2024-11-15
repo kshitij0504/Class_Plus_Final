@@ -243,23 +243,23 @@ router.get('/:groupId/:folderId', getFiles);
 
 //Admin
 
-router.get("/users", adminRole, getAllusers);
-router.get("/users/:id", adminRole, getUser);
-router.delete("/users/:id", adminRole, deleteUser);
+router.get("/users",  getAllusers);
+router.get("/users/:id", getUser);
+router.delete("/users/:id",deleteUser);
 
 // Group management routes
-router.get("/groups", adminRole, getAllGroups);
-router.get("/groups/:id", adminRole, getGroup);
-router.put("/groups/:id", adminRole, updateGroup);
-router.delete("/groups/:id", adminRole, deleteGroup);
+router.get("/groups", getAllGroups);
+router.get("/groups/:id",  getGroup);
+router.put("/groups/:id",  updateGroup);
+router.delete("/groups/:id",deleteGroup);
 
 // Meeting management routes
-router.get("/meetings", adminRole, getAllMeetings);
-router.get("/meetings/:id", adminRole, getMeeting);
+router.get("/meetings", getAllMeetings);
+router.get("/meetings/:id",getMeeting);
 
 // Analytics routes
-router.get("/statistics", adminRole, getStatistics);
-router.get("/activity-logs", adminRole, getActivityLogs);
+router.get("/statistics", getStatistics);
+router.get("/activity-logs", getActivityLogs);
 
 //Collabarative notes taking
 router.post("/group/note", getUserDetailstoken, createNote);

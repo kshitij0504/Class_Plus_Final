@@ -11,8 +11,6 @@ const {
 } = require('../Controller/admin1.controller');
 const adminRole = require('../Helper/authMiddleware');
 
-// Apply authentication middleware to all routes
-router.use(adminRole);
 
 // Dashboard Overview
 // GET /api/analytics/dashboard
@@ -32,15 +30,15 @@ router.get('/meetings', getMeetingAnalytics);
 
 // System Health and Performance (Admin only)
 // GET /api/analytics/system-health
-router.get('/system-health', adminRole, getSystemHealth);
+router.get('/system-health',  getSystemHealth);
 
 // Audit Logs (Admin only)
 // GET /api/analytics/audit-logs
-router.get('/audit-logs', adminRole, getAuditLogs);
+router.get('/audit-logs', getAuditLogs);
 
 // Content Moderation (Admin only)
 // GET /api/analytics/moderation
-router.get('/moderation', adminRole, getContentModeration);
+router.get('/moderation', getContentModeration);
 
 module.exports = router;
 
