@@ -110,7 +110,7 @@ const PreviousMeetings = () => {
   useEffect(() => {
     const fetchMeetings = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/api/group/meetings/${groupId}`, {
+        const response = await fetch(`https://class-plus-final.onrender.com/api/group/meetings/${groupId}`, {
           credentials: 'include'
         });
         
