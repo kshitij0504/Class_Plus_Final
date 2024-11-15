@@ -25,7 +25,7 @@ const JoinMeeting = () => {
 
       try {
         const response = await axios.get(
-          `http://localhost:8000/api/meetings/join?meetingId=${meetingId}&password=${password}`,
+          `https://class-plus-final.onrender.com/meetings/join?meetingId=${meetingId}&password=${password}`,
           { withCredentials: true }
         );
 

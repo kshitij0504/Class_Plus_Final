@@ -280,7 +280,7 @@ const WebRTCMeetingRoom = () => {
 
   // Enhanced socket initialization with reconnection handling
   const initializeSocket = () => {
-    const socket = io("http://localhost:8000/meeting", {
+    const socket = io("https://class-plus-final.onrender.com/meeting", {
       auth: { token },
       reconnection: true,
       reconnectionAttempts: 5,

@@ -495,6 +495,13 @@ const SidebarComponent = ({
         state={ isLeader}
       />
       <SidebarItem
+        to={`/groups/${id}/video`}
+        icon={FaTowerBroadcast}
+        text="Meeting"
+        onClick={() => onClose && onClose()}
+        state={ isLeader}
+      />
+      <SidebarItem
         to={`/group/${id}/note`}
         icon={FaNoteSticky}
         text="Notes"

@@ -75,7 +75,7 @@ const MeetingScheduler = () => {
       const startTime = new Date(`${formData.date}T${formData.time}`).toISOString();
       
       const response = await axios.post(
-        "http://localhost:8000/api/meetings/schedule",
+        "https://class-plus-final.onrender.com/api/meetings/schedule",
         {
           groupId: id,
           title: formData.title,
