@@ -74,6 +74,7 @@ async function checkEmail(req, res) {
             updatedAt: user.updatedAt,
             avatar: user.avatar,
           },
+          token
         },
       });
   } catch (error) {
