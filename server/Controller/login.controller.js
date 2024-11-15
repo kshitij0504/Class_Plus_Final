@@ -54,7 +54,7 @@ async function checkEmail(req, res) {
     const cookieOptions = {
       httpOnly: true, // Prevents client-side access
       secure: process.env.NODE_ENV === "production", // Enable in production (HTTPS)
-      sameSite: 'Strict', // Helps prevent CSRF attacks
+      sameSite: 'None', // Helps prevent CSRF attacks
       path: '/', // Accessible across the entire site
     };
 
