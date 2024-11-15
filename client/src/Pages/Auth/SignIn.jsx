@@ -48,7 +48,6 @@ const SignIn = () => {
       const response = await axios.post(URL, formdata, {withCredentials: true});
       toast.success(response.data.message);
       console.log(response);
-      
 
       if (response.data.success) {
         const { user, token } = response.data.data;

@@ -22,6 +22,7 @@ export default function Header() {
       console.error("Error during logout:", error);
     }
   };
+  console.log(currentUser);
   return (
     <Navbar
       fluid
