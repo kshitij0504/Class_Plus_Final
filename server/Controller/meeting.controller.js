@@ -112,6 +112,7 @@ const getAllmeeting = async (req, res) => {
 
 const joinMeeting = async (req, res) => {
   const { meetingId, password } = req.query; 
+  console.log(req.query)
   const userId = req.user.id;
 
   if (!meetingId || !password) {
