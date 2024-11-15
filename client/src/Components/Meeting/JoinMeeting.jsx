@@ -25,10 +25,9 @@ const JoinMeeting = () => {
 
       try {
         const response = await axios.get(
-          `https://class-plus-final.onrender.com/meetings/join?meetingId=${meetingId}&password=${password}`,
+          `https://class-plus-final.onrender.com/api/meetings/join?meetingId=${meetingId}&password=${password}`,
           { withCredentials: true }
-        );
-
+        );        
         setMeetingDetails(response.data.data);
       } catch (error) {
         console.error('Error joining meeting:', error);
