@@ -43,6 +43,8 @@ async function checkEmail(req, res) {
       role: user.role,
     };
 
+    console.log(process.env.JWT_SECRET_KEY)
+
     // Sign token
     const token = jwt.sign(payload, process.env.JWT_SECRET_KEY, {
       expiresIn: "1d", // Token valid for 1 day
@@ -51,7 +53,7 @@ async function checkEmail(req, res) {
     // Set cookie options
     const cookieOptions = {
       httpOnly: true, // Prevents client-side access
-      secure: true, // Enable in production (HTTPS)
+      secure: process.env.NODE_ENV === "production", // Enable in production (HTTPS)
       sameSite: 'Strict', // Helps prevent CSRF attacks
       path: '/', // Accessible across the entire site
     };
