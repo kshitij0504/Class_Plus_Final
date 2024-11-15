@@ -27,7 +27,7 @@ const handleOnetoOneChatSocket = require("./utils/onetoonechatsocket");
 
 // Middleware setup
 app.use(cookieParser());
-app.use(cors({ origin: "https://classplus.vercel.app",credentials: true }));
+app.use(cors({ origin: ["https://classplus.vercel.app", "http://localhost:5173"],credentials: true }));
 app.use(express.json());
 
 app.use((req, res, next) => {
